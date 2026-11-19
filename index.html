@@ -846,7 +846,7 @@ function renderEvents(){
   Object.keys(C).sort().forEach(k=>{opts.push(`<option value="c:${esc(k)}">${esc(k==="Other"?"Other places":"All of "+k)}</option>`);
     [...C[k]].sort().forEach(ci=>opts.push(`<option value="t:${esc(ci)}">&nbsp;&nbsp;&nbsp;${esc(ci)}</option>`));});
   sel.innerHTML=opts.join(""); sel.value=PLACE; if(sel.value!==PLACE){PLACE="";sel.value="";}
-  sel.hidden=Object.keys(C).length<2&&LIST.filter(e=>e.city).length<2;
+  sel.hidden=!LIST.length;
   const inPlace=e=>!PLACE||(PLACE[0]==="c"?(e.country||"Other")===PLACE.slice(2):e.city===PLACE.slice(2));
   const L=LIST.filter(e=>(FILTER==="all"||e.fandom===FILTER||(FILTER==="open"?isOpen(e):e.status===FILTER))&&inPlace(e));
   $("evList").innerHTML=L.map(evCard).join("")||`<p class="hint">Nothing here right now. Tap the bell on any event to be notified.</p>`;
