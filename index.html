@@ -253,7 +253,11 @@ img.avatar{object-fit:cover;background:#fff;padding:0}
 .readAgain{justify-self:start}
 body.tg .back{display:none!important}
 .loading{position:fixed;inset:0;z-index:50;display:grid;place-content:center;justify-items:center;gap:6px;text-align:center;padding:24px;background:#e6d7f5}
-.loading b{font:700 24px var(--display)}.loading span{font-weight:700;color:var(--muted);max-width:300px}
+.loading b{font:700 24px var(--display)}
+.loading.login{overflow-y:auto;align-content:center}
+.lgbox{display:grid;gap:12px;width:min(340px,100%);text-align:left;background:var(--paper);border:2px solid var(--ink);border-radius:18px;padding:16px;box-shadow:var(--shadow);margin:8px 0}
+.lgbox .btn2:disabled{opacity:.6}
+.loading a{color:var(--ink);font-weight:900}.loading span{font-weight:700;color:var(--muted);max-width:300px}
 .admin a.btn2{text-decoration:none}
 </style>
 
@@ -779,12 +783,43 @@ function boot(){
   const tg=window.Telegram&&Telegram.WebApp;
   INIT=tg?tg.initData:"";
   PAYLINK=new URLSearchParams(location.search).get("pay")||(tg&&tg.initDataUnsafe&&tg.initDataUnsafe.start_param)||"";
-  if(!INIT){ $("loading").innerHTML=`<b>Open JTS from Telegram</b><span>This page only works inside the Telegram bot.</span>`; return; }
   if(API_URL.indexOf("PASTE")===0){ $("loading").innerHTML=`<b>Almost there!</b><span>API_URL at the top of the script still needs your Apps Script /exec link.</span>`; return; }
+  if(!INIT){ const t=webToken(); if(!t){ showLogin(); return; } INIT="web:"+t; }
   call("bootstrap",INIT).then(onBoot).catch(e=>{
+    if(String(e.message).indexOf("LOGIN_EXPIRED")>=0){ webToken(""); INIT=""; showLogin(); return; }
     $("loading").innerHTML=`<b>Can't open JTS right now</b><span>${esc(e.message||e)}</span>`;
   });
 }
+/* ===== Browser version: sign in with email + 6-digit code (for customers without Telegram) ===== */
+function webToken(v){ try{ if(v===undefined) return localStorage.getItem("jts_web")||""; if(v) localStorage.setItem("jts_web",v); else localStorage.removeItem("jts_web"); }catch(e){ return ""; } return v; }
+function showLogin(){
+  const L=$("loading"); L.classList.add("login");
+  L.innerHTML=`<span class="jts" style="font-size:52px">JTS</span>
+    <b>Log in to JTS ♡</b>
+    <span>No Telegram? No problem. Type your email and we'll send you a 6-digit code.</span>
+    <form id="lgForm" class="lgbox" novalidate>
+      <label class="field">Email<input type="email" id="lgEmail" autocomplete="email" inputmode="email" placeholder="you@email.com" required></label>
+      <label class="field" id="lgCodeWrap" hidden>6-digit code<input type="text" id="lgCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="123456"></label>
+      <button type="submit" class="btn2" id="lgBtn">Send me a code</button>
+      <small class="hint" id="lgMsg" role="status" aria-live="polite"></small>
+    </form>
+    <span class="hint">Have Telegram? It's easier in the bot: <a href="https://t.me/JajaTixBot">@JajaTixBot</a></span>`;
+  let step="email";
+  $("lgForm").addEventListener("submit",ev=>{
+    ev.preventDefault();
+    const em=$("lgEmail").value.trim(), btn=$("lgBtn"), msg=$("lgMsg");
+    btn.disabled=true; msg.textContent=step==="email"?"Sending your code…":"Checking…";
+    const job=step==="email"?call("webStart",em):call("webVerify",em,$("lgCode").value.trim());
+    job.then(r=>{
+      btn.disabled=false;
+      if(step==="email"){ step="code"; $("lgCodeWrap").hidden=false; $("lgEmail").readOnly=true; btn.textContent="Log in"; msg.textContent="Code sent to "+em+". Check your inbox (and spam folder)."; $("lgCode").focus(); return; }
+      webToken(r.token); INIT="web:"+r.token; L.classList.remove("login");
+      L.innerHTML=`<b>Loading JTS…</b><span>Your ticket, our mission ♡</span>`;
+      call("bootstrap",INIT).then(onBoot).catch(e=>{ L.innerHTML=`<b>Can't open JTS right now</b><span>${esc(e.message||e)}</span>`; });
+    }).catch(e=>{ btn.disabled=false; msg.textContent=e.message; });
+  });
+}
+function webLogout(){ const t=webToken(); webToken(""); call("webLogout",t).catch(()=>{}).then(()=>location.reload()); }
 function onBoot(b){
   if(b.closed){ $("loading").innerHTML=`<b>JTS ♡</b><span>${esc(b.closed)}</span>`; return; }
   USER=b.user; DRAFT=b.draft||null; TERMS_VER=String(b.termsVersion||"1"); AGREED=!!(b.profile&&b.profile.agreed&&b.profile.agreed===TERMS_VER); PAY=b.pay; RM_SGD=b.rmToSgd||0; ADMINS=b.admins; FORSALE=b.forSale||[]; follows=new Set(b.follows);
@@ -805,6 +840,11 @@ function onBoot(b){
   });
   $("helloName").textContent=`Hi ${USER.first_name||"there"} ♡`;
   $("tg").value=USER.username?"@"+USER.username:"(no Telegram username)";
+  if(USER.web){
+    if(!$("em").value) $("em").value=USER.email;
+    const h=document.querySelector(".hello");
+    if(h&&!$("lgOut")){ const x=document.createElement("button"); x.type="button"; x.id="lgOut"; x.className="back"; x.textContent="Log out"; x.title=USER.email; x.addEventListener("click",webLogout); h.appendChild(x); }
+  }
   if(b.profile){
     const p=b.profile; [["fn",p.fn],["ln",p.ln],["ph",p.ph],["em",p.em],["ic",p.ic],["acc",p.acc],["accn",p.accn],["pe",p.pe]].forEach(([k,v])=>$(k).value=v||"");
     if(p.bank) $("bank").value=p.bank;
