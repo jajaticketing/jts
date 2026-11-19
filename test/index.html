@@ -1,0 +1,1373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JTS · Jaja Ticketing Service</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* Theme: JTS banner — pastel periwinkle-to-pink sky on white grid paper, chunky black rounded type with white sticker outline, retro OS windows (three dots), lavender pills, hard offset shadows, sparkles. Single light theme by choice to match the brand. */
+:root{
+  --ink:#1d1a2e; --muted:#6a6383; --paper:#fffaf7; --paper2:#f7f1fb;
+  --lilac:#c9b8f8; --lilac-deep:#9d86ec; --lilac-soft:#ece5ff;
+  --pink:#f7b6d2; --pink-soft:#fde7f1; --heart:#f48fb4;
+  --sky:#c3cff6; --sun:#f7c64a; --mint:#2f8f63; --mint-soft:#dcf5e8; --warn:#a2541a; --warn-soft:#fff1de;
+  --display:"Fredoka", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif;
+  --body:"Nunito", "Segoe UI", system-ui, sans-serif;
+  --shadow:4px 4px 0 var(--lilac-deep);
+  color-scheme: light;
+}
+*{box-sizing:border-box}
+html,body{margin:0;color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45}
+body{background-color:#e6d7f5;
+  background-image:
+    linear-gradient(rgba(255,255,255,.5) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.5) 1px,transparent 1px),
+    linear-gradient(180deg,#c6d0f7 0%,#e2d3f6 40%,#f6cfe3 100%);
+  background-size:26px 26px,26px 26px,100% 100%;background-attachment:fixed}
+.app{max-width:440px;margin:0 auto;padding:0 16px 130px;position:relative}
+.spark{position:absolute;color:var(--ink);pointer-events:none;font-size:18px;line-height:1}
+.spark.w{color:#fff;font-size:22px}
+.demo-bar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:12px 0 0;font-size:12px;color:var(--muted);font-weight:700}
+.demo-bar b{background:var(--sun);color:var(--ink);border:1.5px solid var(--ink);border-radius:6px;padding:1px 6px;font-size:11px}
+.demo-bar button{border:1.5px solid var(--ink);background:var(--paper);color:var(--ink);border-radius:999px;padding:4px 10px;font:800 12px var(--body);cursor:pointer}
+.demo-bar button.on{background:var(--ink);color:#fff}
+/* brand header */
+.topbar{display:flex;align-items:center;gap:10px;padding:14px 0 12px;position:relative}
+.jts{font-family:var(--display);font-weight:700;font-size:40px;line-height:.9;color:var(--ink);letter-spacing:.01em;
+  -webkit-text-stroke:0;text-shadow:3px 0 #fff,-3px 0 #fff,0 3px #fff,0 -3px #fff,2px 2px #fff,-2px -2px #fff,2px -2px #fff,-2px 2px #fff,6px 6px 0 var(--lilac-deep)}
+.brandtxt b{display:block;font-size:11px;letter-spacing:.22em;font-weight:900;background:#fff;border-radius:999px;padding:3px 10px;width:max-content}
+.brandtxt small{display:inline-block;margin-top:5px;font-size:11px;letter-spacing:.14em;font-weight:800;background:var(--lilac);border:1.5px solid var(--ink);border-radius:999px;padding:2px 9px;text-transform:uppercase}
+.smiley{width:30px;height:30px;flex:none;margin-left:-4px;transform:rotate(-12deg)}
+.back{margin-left:auto;border:1.5px solid var(--ink);background:var(--paper);color:var(--ink);border-radius:999px;padding:6px 12px;font:800 13px var(--body);cursor:pointer;box-shadow:2px 2px 0 var(--ink)}
+.back[hidden]{display:none}
+.progress{display:flex;gap:6px;margin:0 0 16px;padding:6px 10px;background:var(--paper);border:1.5px solid var(--ink);border-radius:999px}
+.progress span{flex:1;height:8px;border-radius:8px;background:var(--lilac-soft)}
+.progress span.on{background:linear-gradient(90deg,var(--lilac-deep),var(--heart))}
+h1,h2{font-family:var(--display);text-wrap:balance;margin:0;font-weight:700}
+h2{font-size:26px;line-height:1.05;margin:2px 0 6px}
+.lede{color:var(--muted);margin:0 0 16px;font-size:14px;font-weight:600}
+/* retro window cards */
+.card{position:relative;background:var(--paper);border:2px solid var(--ink);border-radius:16px;padding:44px 14px 14px;display:grid;gap:12px;margin-bottom:16px;box-shadow:var(--shadow)}
+.card::before{content:"";position:absolute;left:0;right:0;top:0;height:30px;border-bottom:2px solid var(--ink);border-radius:14px 14px 0 0;
+  background:radial-gradient(circle at 16px 50%,#fff 4.5px,var(--ink) 5px 6.5px,transparent 7px),radial-gradient(circle at 34px 50%,#fff 4.5px,var(--ink) 5px 6.5px,transparent 7px),radial-gradient(circle at 52px 50%,#fff 4.5px,var(--ink) 5px 6.5px,transparent 7px),linear-gradient(90deg,#c9d2f8,#e6d4f8 55%,#f7cfe4)}
+.card h3{margin:0;font-size:12px;letter-spacing:.14em;text-transform:uppercase;font-weight:900;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.card h3::before{content:"✦";color:var(--lilac-deep);font-size:14px}
+/* event ticket */
+.hero{display:grid;grid-template-columns:1fr 64px;margin-bottom:18px;filter:drop-shadow(5px 5px 0 var(--lilac-deep))}
+.hero .main,.hero .side{background:var(--paper);border:2px solid var(--ink)}
+.hero .main{border-right:0;border-radius:18px 0 0 18px;padding:16px 14px 14px;position:relative;
+  background:linear-gradient(160deg,#fff 0%,#fff 55%,var(--tix,#fde7f1) 100%)}
+.hero .side{border-left:2px dashed var(--ink);border-radius:0 18px 18px 0;display:grid;place-items:center;position:relative;
+  background:repeating-linear-gradient(180deg,var(--ink) 0 3px,transparent 3px 5px,var(--ink) 5px 6px,transparent 6px 10px,var(--ink) 10px 14px,transparent 14px 16px) center 16px/22px 42% no-repeat,var(--paper)}
+.hero .side::before,.hero .side::after{content:"";position:absolute;left:-12px;width:20px;height:20px;border-radius:50%;background:#e6d7f5;border:2px solid var(--ink)}
+.hero .side::before{top:-11px}.hero .side::after{bottom:-11px}
+.hero .side span{writing-mode:vertical-rl;font:900 10px var(--body);letter-spacing:.18em;background:var(--paper);padding:4px 2px;position:absolute;bottom:14px}
+.hero .tag{display:inline-block;background:var(--lilac);border:1.5px solid var(--ink);padding:3px 10px;border-radius:999px;font-size:11px;font-weight:900;letter-spacing:.1em}
+.hero h1{font-size:34px;line-height:.98;margin:12px 0 4px}
+.hero p{margin:0;color:var(--muted);font-size:13px;font-weight:700}
+.facts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+.facts div{background:var(--pink-soft);border:1.5px solid var(--ink);border-radius:12px;padding:7px 10px;font-size:12px;font-weight:700;color:var(--muted)}
+.facts b{display:block;font-size:14px;color:var(--ink)}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:14px}
+td{padding:7px 0;border-bottom:1.5px dashed var(--lilac);vertical-align:top}
+td:last-child{text-align:right;font-weight:800;padding-left:10px}
+tr:last-child td{border-bottom:0}
+.note{font-size:13px;border-radius:12px;padding:10px 12px;background:var(--warn-soft);color:var(--warn);font-weight:700;border:1.5px solid currentColor}
+.note.ok{background:var(--mint-soft);color:var(--mint)}
+.note.info{background:var(--lilac-soft);color:#5a45b8}
+label.field{display:grid;gap:5px;font-size:13px;font-weight:800}
+.hint{font-weight:600;color:var(--muted);font-size:12px}
+input[type=text],input[type=email],input[type=tel],input[type=password],select{width:100%;padding:11px 12px;border-radius:12px;border:1.5px solid var(--ink);background:#fff;color:var(--ink);font:600 15px var(--body)}
+input[readonly]{background:var(--paper2);color:var(--muted)}
+input:focus-visible,select:focus-visible,button:focus-visible,.opt:focus-within,.scrollbox:focus-visible{outline:3px solid var(--heart);outline-offset:2px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pw{position:relative}
+.pw button{position:absolute;right:6px;top:50%;transform:translateY(-50%);border:0;background:var(--lilac-soft);border-radius:8px;color:#5a45b8;font:800 12px var(--body);cursor:pointer;padding:5px 8px}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:14px;cursor:pointer;font-weight:600}
+.check input{margin-top:2px;accent-color:var(--lilac-deep);width:19px;height:19px;flex:none}
+.check.locked{opacity:.45;cursor:not-allowed}
+.prefill{display:flex;align-items:center;gap:10px;background:var(--mint-soft);color:var(--mint);border:1.5px solid var(--mint);border-radius:999px;padding:8px 14px;font-size:13px;font-weight:800;margin-bottom:16px}
+.prefill button{margin-left:auto;background:none;border:0;color:inherit;text-decoration:underline;font:800 13px var(--body);cursor:pointer}
+.scrollbox{max-height:330px;overflow-y:auto;border:1.5px solid var(--ink);border-radius:12px;padding:4px 12px;background:#fff}
+.qa{padding:10px 0;border-bottom:1.5px dashed var(--lilac);font-size:14px}
+.qa:last-child{border-bottom:0}
+.qa b{display:block;margin-bottom:2px;font-weight:800}
+.qa p{margin:0;color:var(--muted);font-weight:600}
+.qa p strong{color:var(--ink)}
+.tnc{counter-reset:t;list-style:none;margin:0;padding:6px 0}
+.tnc li{counter-increment:t;display:grid;grid-template-columns:34px 1fr;gap:6px;padding:8px 0;border-bottom:1.5px dashed var(--lilac);font-size:14px;font-weight:600}
+.tnc li::before{content:"#" counter(t);font:700 15px var(--display);color:var(--lilac-deep)}
+.tnc li:last-child{border-bottom:0}
+.endmark{text-align:center;font:700 15px var(--display);color:var(--heart);padding:10px 0 12px}
+.readstate{font-size:10px;font-weight:900;letter-spacing:.08em;color:var(--warn);background:var(--warn-soft);border-radius:999px;padding:2px 8px}
+.readstate.ok{color:var(--mint);background:var(--mint-soft)}
+.choice{border:1.5px solid var(--ink);border-radius:14px;padding:12px;display:grid;gap:10px;background:#fff}
+.choice-head{display:flex;justify-content:space-between;align-items:baseline;font:700 17px var(--display)}
+.choice-head span{color:var(--muted);font:700 12px var(--body)}
+.opts{display:grid;gap:8px}
+.opt{position:relative;display:flex;gap:10px;align-items:flex-start;border:1.5px solid var(--ink);border-radius:14px;padding:10px 12px;cursor:pointer;font-size:14px;font-weight:700;background:#fff;transition:transform .08s}
+.opt input{margin-top:3px;accent-color:var(--lilac-deep);flex:none}
+.opt.sel{background:var(--lilac-soft);box-shadow:3px 3px 0 var(--ink);transform:translate(-1px,-1px)}
+.opt small{display:block;color:var(--muted);font-size:12px;font-weight:600}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:#fff;border:1.5px solid var(--ink);border-radius:999px;padding:3px}
+.seg button{border:0;background:none;padding:9px;border-radius:999px;font:800 14px var(--body);color:var(--muted);cursor:pointer}
+.seg button.on{background:var(--ink);color:#fff}
+.upload{display:flex;align-items:center;gap:10px;border:2px dashed var(--lilac-deep);border-radius:14px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;position:relative;background:#fff}
+.upload input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.upload .ic{width:36px;height:36px;border-radius:10px;background:var(--lilac);border:1.5px solid var(--ink);display:grid;place-items:center;font-weight:900;flex:none}
+.upload.done{border-style:solid;border-color:var(--mint);background:var(--mint-soft);color:var(--mint)}
+.big{font:700 34px var(--display);font-variant-numeric:tabular-nums;line-height:1}
+.paynow{display:flex;justify-content:space-between;align-items:end;gap:10px;background:var(--pink-soft);border:1.5px solid var(--ink);border-radius:14px;padding:12px}
+.paynow small{color:var(--muted);font-size:12px;display:block;font-weight:700}
+.acct{display:grid;grid-template-columns:96px 1fr;gap:12px;align-items:start}
+.qr{aspect-ratio:1;border-radius:12px;border:2px dashed var(--lilac-deep);display:grid;place-items:center;text-align:center;font-size:11px;font-weight:700;color:var(--muted);padding:6px;background:#fff}
+.kv{display:grid;gap:7px;font-size:13px}
+.kv div{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.kv span{color:var(--muted);font-weight:700}
+.kv b{font-variant-numeric:tabular-nums;text-align:right;font-weight:800}
+.copy{border:1.5px solid var(--ink);background:var(--lilac);color:var(--ink);border-radius:999px;padding:2px 9px;font:900 11px var(--body);cursor:pointer;flex:none}
+.review{display:grid;font-size:14px}
+.review div{display:grid;grid-template-columns:118px 1fr;gap:10px;padding:7px 0;border-bottom:1.5px dashed var(--lilac)}
+.review div:last-child{border-bottom:0}
+.review span{color:var(--muted);font-size:13px;font-weight:700}
+.review b{font-weight:800;word-break:break-word}
+.review .sec{grid-template-columns:1fr;font:700 16px var(--display);color:var(--lilac-deep);padding-top:12px;border-bottom:0}
+.timeline{list-style:none;margin:0;padding:0}
+.timeline li{display:grid;grid-template-columns:22px 1fr;gap:10px;padding-bottom:12px;position:relative;font-size:14px;font-weight:700}
+.timeline li::before{content:"";width:14px;height:14px;border-radius:50%;border:2px solid var(--ink);background:#fff;margin-top:3px;margin-left:2px}
+.timeline li::after{content:"";position:absolute;left:10px;top:21px;bottom:0;border-left:2px dashed var(--ink)}
+.timeline li:last-child::after{display:none}
+.timeline li.done::before{background:var(--mint)}
+.timeline li.now::before{background:var(--heart);box-shadow:0 0 0 4px var(--pink-soft)}
+.timeline small{display:block;color:var(--muted);font-size:12px;font-weight:600}
+.tgmsg{background:#fff;border:1.5px solid var(--ink);border-radius:16px 16px 16px 4px;padding:10px 12px;font-size:13px;font-weight:600;white-space:pre-wrap;line-height:1.5;max-height:260px;overflow:auto}
+.tgmsg .from{font-weight:900;color:var(--lilac-deep);display:block;margin-bottom:4px}
+.queuecard{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:12px;background:var(--ink);color:#efe8ff;border-radius:12px;padding:12px;white-space:pre-wrap;line-height:1.55}
+.sheet{overflow-x:auto;border:1.5px solid var(--ink);border-radius:10px;background:#fff}
+.sheet table{font-size:11.5px;white-space:nowrap;width:auto}
+.sheet th,.sheet td{border:1px solid var(--lilac);padding:5px 8px;text-align:left;font-weight:600}
+.sheet th{background:var(--lilac-soft);font-weight:900}
+.sheet td:last-child{text-align:left;font-weight:600}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap}
+.btn2{border:1.5px solid var(--ink);background:var(--pink);color:var(--ink);border-radius:999px;padding:10px 16px;font:900 14px var(--body);cursor:pointer;box-shadow:3px 3px 0 var(--ink)}
+.btn2:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
+.mainbtn{position:fixed;left:0;right:0;bottom:0;padding:10px 16px calc(14px + env(safe-area-inset-bottom));background:linear-gradient(to top,#f6cfe3 65%,rgba(246,207,227,0))}
+.mainbtn button{display:block;width:100%;max-width:408px;margin:0 auto;border:2px solid var(--ink);border-radius:999px;padding:14px;background:var(--lilac);color:var(--ink);font:700 18px var(--display);letter-spacing:.02em;cursor:pointer;box-shadow:4px 4px 0 var(--ink)}
+.mainbtn button:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--ink)}
+.mainbtn button:disabled{background:#e9e4f2;color:#8f89a6;border-color:#8f89a6;box-shadow:4px 4px 0 #b8b2cb;cursor:not-allowed}
+.mainbtn .why{max-width:408px;margin:0 auto 8px;text-align:center;font-size:12px;font-weight:800;color:var(--ink);min-height:16px}
+.done-banner{display:flex;gap:12px;align-items:center;background:var(--sun);border:2px solid var(--ink);border-radius:18px;padding:14px;margin-bottom:18px;box-shadow:4px 4px 0 var(--ink);transform:rotate(-1deg)}
+.done-banner b.t{display:block;font:700 22px var(--display)}
+.done-banner span{font-weight:700;font-size:14px}
+.step[hidden],[hidden]{display:none !important}
+.tagpill{font-size:10px;font-weight:900;letter-spacing:.08em;background:var(--sun);border:1.5px solid var(--ink);padding:1px 7px;border-radius:999px}
+@media (prefers-reduced-motion:no-preference){.step{animation:in .25s ease-out}@keyframes in{from{opacity:.3;transform:translateY(8px)}to{opacity:1;transform:none}}}
+/* ===== v4: home tabs ===== */
+.view[hidden]{display:none !important}
+.hello{display:flex;align-items:center;gap:10px;margin:2px 0 14px}
+.hello b{display:block;font:700 26px var(--display);line-height:1}
+.hello span{font-weight:700;color:var(--muted);font-size:14px}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px}
+.tile{text-align:left;border:2px solid var(--ink);border-radius:18px;padding:12px;display:grid;gap:2px;cursor:pointer;box-shadow:4px 4px 0 var(--ink);color:var(--ink);font-family:var(--body)}
+.tile:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--ink)}
+.tile i{width:38px;height:38px;border-radius:12px;background:#fff;border:1.5px solid var(--ink);display:grid;place-items:center;margin-bottom:6px;font-style:normal}
+.tile i svg{width:22px;height:22px}
+.tile b{font:700 17px var(--display);line-height:1.1}
+.tile small{font-weight:700;font-size:12px;color:var(--muted)}
+.t-lilac{background:var(--lilac)}.t-pink{background:var(--pink)}.t-sky{background:var(--sky)}.t-sun{background:var(--sun)}
+.olist{display:grid;gap:10px}
+.orow{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center;padding:10px 12px;border:1.5px solid var(--ink);border-radius:14px;background:#fff;font-size:13px}
+.orow b{font-weight:800;font-size:14px}
+.orow small{grid-column:1/-1;color:var(--muted);font-weight:700;font-size:12px}
+.status{font-size:10px;font-weight:900;letter-spacing:.06em;border:1.5px solid var(--ink);border-radius:999px;padding:2px 8px;white-space:nowrap;text-transform:uppercase}
+.s-open{background:#bff0d4}.s-pre{background:var(--pink)}.s-full{background:#e4e0ec;color:#5e5873}.s-soon{background:var(--sky)}.s-wait{background:var(--sun)}.s-ok{background:#bff0d4}
+.slotbar{height:10px;border-radius:10px;background:var(--lilac-soft);border:1.5px solid var(--ink);overflow:hidden}
+.slotbar span{display:block;height:100%;background:linear-gradient(90deg,var(--lilac-deep),var(--heart))}
+.slotbar.big{height:14px}
+.filters{display:flex;gap:7px;overflow-x:auto;padding:2px 2px 12px;margin:0 -2px}
+.filters button{flex:none;border:1.5px solid var(--ink);background:#fff;border-radius:999px;padding:6px 12px;font:800 13px var(--body);cursor:pointer;color:var(--ink)}
+.filters button.on{background:var(--ink);color:#fff}
+.evcard{display:grid;grid-template-columns:78px 1fr;gap:12px;background:var(--paper);border:2px solid var(--ink);border-radius:18px;padding:12px;margin-bottom:14px;box-shadow:var(--shadow)}
+.poster{border-radius:12px;border:1.5px solid var(--ink);aspect-ratio:3/4;display:grid;place-items:center;font:700 20px var(--display);color:var(--ink);text-align:center;line-height:1;padding:4px;position:relative;overflow:hidden}
+.poster::after{content:"✦";position:absolute;right:5px;top:3px;font-size:12px}
+.evbody{display:grid;gap:6px;min-width:0}
+.evtop{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.evbody h4{margin:0;font:700 18px var(--display);line-height:1.08}
+.evmeta{font-size:12px;font-weight:700;color:var(--muted)}
+.evslots{font-size:12px;font-weight:800}
+.evact{display:flex;gap:8px;align-items:center;margin-top:2px}
+.btn2.sm{padding:7px 14px;font-size:13px;box-shadow:2px 2px 0 var(--ink)}
+.btn2.ghost{background:#fff}
+.bell{width:36px;height:36px;border-radius:50%;border:1.5px solid var(--ink);background:#fff;display:grid;place-items:center;cursor:pointer;flex:none}
+.bell svg{width:18px;height:18px}
+.bell.on{background:var(--sun)}
+.sample{font-size:9px;font-weight:900;letter-spacing:.08em;color:var(--muted);border:1px dashed var(--muted);border-radius:6px;padding:1px 5px}
+details.fq{border-bottom:1.5px dashed var(--lilac);padding:10px 0}
+details.fq:last-of-type{border-bottom:0}
+details.fq summary{font-weight:800;cursor:pointer;list-style:none;display:flex;gap:8px;font-size:14px}
+details.fq summary::-webkit-details-marker{display:none}
+details.fq summary::before{content:"+";font:700 16px var(--display);color:var(--lilac-deep);width:14px;flex:none}
+details.fq[open] summary::before{content:"–"}
+details.fq p{margin:6px 0 0 22px;color:var(--muted);font-weight:600;font-size:14px}
+details.fq p strong{color:var(--ink)}
+.admin{display:grid;grid-template-columns:44px 1fr auto;gap:12px;align-items:center;padding:10px;border:1.5px solid var(--ink);border-radius:14px;background:#fff}
+.admin b{display:block;font:700 17px var(--display)}
+.admin small{color:var(--muted);font-weight:700;font-size:12px}
+.avatar{width:44px;height:44px;border-radius:50%;border:2px solid var(--ink);display:grid;place-items:center;font:700 20px var(--display)}
+.qchips{display:flex;flex-wrap:wrap;gap:8px}
+.qchips button{border:1.5px solid var(--ink);background:var(--lilac-soft);border-radius:999px;padding:7px 12px;font:800 13px var(--body);cursor:pointer;color:var(--ink)}
+.howto{margin:0;padding:0;list-style:none;counter-reset:h;display:grid;gap:10px}
+.howto li{counter-increment:h;display:grid;grid-template-columns:30px 1fr;gap:10px;font-size:14px}
+.howto li::before{content:counter(h);width:28px;height:28px;border-radius:50%;background:var(--lilac);border:1.5px solid var(--ink);display:grid;place-items:center;font:700 15px var(--display)}
+.howto li::before{grid-row:span 2}
+.howto b,.howto span{grid-column:2}
+.howto b{display:block;font-weight:800}
+.howto span{color:var(--muted);font-weight:600;font-size:13px}
+.tabbar{position:fixed;left:0;right:0;bottom:0;padding:8px 12px calc(10px + env(safe-area-inset-bottom));background:linear-gradient(to top,#f6cfe3 70%,rgba(246,207,227,0))}
+.tabbar nav{max-width:420px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr);background:var(--paper);border:2px solid var(--ink);border-radius:22px;padding:5px;box-shadow:4px 4px 0 var(--ink)}
+.tabbar button{border:0;background:none;border-radius:16px;padding:6px 2px;display:grid;justify-items:center;gap:1px;font:800 10.5px var(--body);color:var(--muted);cursor:pointer}
+.tabbar button svg{width:22px;height:22px}
+.tabbar button.on{background:var(--lilac);color:var(--ink)}
+.toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%) translateY(20px);opacity:0;pointer-events:none;background:var(--ink);color:#fff;font-weight:800;font-size:13px;padding:10px 14px;border-radius:14px;max-width:min(380px,90vw);text-align:center;transition:opacity .2s,transform .2s;z-index:20}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.poster.has-img{background-size:cover;background-position:center;color:transparent}
+.evposter{display:block;width:100%;border:2px solid var(--ink);border-radius:18px;margin-bottom:16px;box-shadow:var(--shadow);background:#fff}
+.qr.has-img{padding:0;border-style:solid;border-color:var(--ink);overflow:hidden}.qr.has-img img{width:100%;height:100%;object-fit:contain;display:block}
+#seatPlan img{width:100%;border-radius:12px;border:1.5px solid var(--ink);display:block;margin-bottom:10px}
+.sales{display:grid;gap:6px;margin-top:2px}
+.salerow{display:flex;justify-content:space-between;align-items:center;gap:8px;border:1.5px solid var(--ink);border-radius:12px;padding:6px 6px 6px 10px;background:#fff;font-size:13px;font-weight:800}
+.salerow .btn2.sm{padding:5px 12px}
+img.avatar{object-fit:cover;background:#fff;padding:0}
+.evnotes{white-space:pre-wrap;font-weight:700;font-size:14px;line-height:1.6}
+.sale-tile{width:100%;grid-template-columns:auto 1fr;display:grid;align-items:center;gap:12px;margin:-4px 0 18px}
+.sale-tile i{margin:0}.sale-tile span{display:grid}
+.sale-price{font:700 20px var(--display)}
+.sale-card .kv b{text-align:left}.sale-card .kv div{justify-content:flex-start;gap:10px;align-items:baseline}
+.sale-card .kv span{min-width:70px}
+.sale-card.sold{opacity:.6}
+.sale-card a.btn2{text-decoration:none}
+.readAgain{justify-self:start}
+body.tg .back{display:none!important}
+.loading{position:fixed;inset:0;z-index:50;display:grid;place-content:center;justify-items:center;gap:6px;text-align:center;padding:24px;background:#e6d7f5}
+.loading b{font:700 24px var(--display)}.loading span{font-weight:700;color:var(--muted);max-width:300px}
+.admin a.btn2{text-decoration:none}
+</style>
+
+</head>
+<body>
+<div class="app">
+  <div class="loading" id="loading"><b>Loading JTS…</b><span>Your ticket, our mission ♡</span></div>
+  <span class="spark" style="right:6px;top:64px">✦</span><span class="spark w" style="right:120px;top:84px">✦</span>
+  <div class="topbar">
+    <span class="jts">JTS</span><svg class="smiley" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="17" fill="#f7c64a" stroke="#1d1a2e" stroke-width="2.5"/><ellipse cx="14.5" cy="16" rx="2" ry="3.2" fill="#1d1a2e"/><ellipse cx="25.5" cy="16" rx="2" ry="3.2" fill="#1d1a2e"/><path d="M11.5 22.5 Q20 31 28.5 22.5" fill="none" stroke="#1d1a2e" stroke-width="2.5" stroke-linecap="round"/></svg>
+    <div class="brandtxt"><b>JAJA TICKETING SERVICE</b><small>Your ticket, our mission ♡</small></div>
+    <button class="back" id="back" type="button" hidden>‹ Back</button>
+  </div>
+  <div class="progress" id="progress"></div>
+
+  <!-- ===== HOME TABS ===== -->
+  <section class="view" data-view="home">
+    <div class="hello">
+      <div><b id="helloName">Hi ♡</b><span>What are we hunting today?</span></div>
+      
+    </div>
+    <div class="tiles">
+      <button type="button" class="tile t-lilac" data-goview="events" data-filter="open"><i><svg viewBox="0 0 24 24" fill="none" stroke="#1d1a2e" stroke-width="2" stroke-linejoin="round"><path d="M3 8a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 0-2 2H5a2 2 0 0 0-2-2v-2a2 2 0 0 0 0-4z"/><path d="M14 6v12" stroke-dasharray="2 2"/></svg></i><b>Book tickets</b><small id="openCount"></small></button>
+      <button type="button" class="tile t-pink" data-goview="events" data-filter="pre"><i><svg viewBox="0 0 24 24" fill="none" stroke="#1d1a2e" stroke-width="2" stroke-linecap="round"><path d="M6 3h12M6 21h12M7 3c0 5 10 6 10 9s-10 4-10 9M17 3c0 5-10 6-10 9s10 4 10 9"/></svg></i><b>Pre-book</b><small>Lock a slot with RM30</small></button>
+      <button type="button" class="tile t-sky" data-goview="request"><i><svg viewBox="0 0 24 24" fill="#1d1a2e"><path d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z"/></svg></i><b>Request an event</b><small>Or follow one</small></button>
+      <button type="button" class="tile t-sun" data-goview="admin"><i><svg viewBox="0 0 24 24" fill="none" stroke="#1d1a2e" stroke-width="2" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9.5h8M8 12.5h5" stroke-linecap="round"/></svg></i><b>Talk to admin</b><small>2 admins</small></button>
+    </div>
+    <button type="button" class="tile t-pink sale-tile" data-goview="sale"><i><svg viewBox="0 0 24 24" fill="none" stroke="#1d1a2e" stroke-width="2" stroke-linejoin="round"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.5" fill="#1d1a2e"/></svg></i><span><b>Tickets for sale</b><small id="saleCount">Extra tickets from JTS &amp; friends</small></span></button>
+    <div class="card">
+      <h3>My orders</h3>
+      <div id="myOrders" class="olist"></div>
+    </div>
+    <div class="card">
+      <h3>Slots right now</h3>
+      <div id="homeSlots" class="olist"></div>
+      <button type="button" class="btn2" data-goview="events" data-filter="all">See all events</button>
+    </div>
+  </section>
+
+  <section class="view" data-view="events" hidden>
+    <h2>Events &amp; slots</h2>
+    <p class="lede">See what's available right now. Tap the bell to get notified when something opens.</p>
+    <div class="filters" id="filters">
+      <button type="button" data-f="all" class="on">All</button>
+      <button type="button" data-f="kpop">K-pop</button>
+      <button type="button" data-f="thai">GMMTV · BL · GL</button>
+      <button type="button" data-f="open">Open now</button>
+      <button type="button" data-f="pre">Pre-book</button>
+      <button type="button" data-goview="sale">For sale ›</button>
+    </div>
+    <div id="evList"></div>
+  </section>
+
+  <section class="view" data-view="request" hidden>
+    <h2>Request an event</h2>
+    <p class="lede">Want us to take slots for a concert or fan meet we haven't listed? Tell us. The more requests, the more likely we open it.</p>
+    <div class="card">
+      <h3>New request</h3>
+      <label class="field">Artist / event<input type="text" id="rqArtist" placeholder="e.g. a fan meet in Bangkok"></label>
+      <div class="row2">
+        <label class="field">City<select id="rqCity"><option>Kuala Lumpur</option><option>Singapore</option><option>Bangkok</option><option>Seoul</option><option>Jakarta</option><option>Other</option></select></label>
+        <label class="field">Tickets<select id="rqQty"><option>1</option><option selected>2</option><option>3</option><option>4</option></select></label>
+      </div>
+      <label class="field">Date, if announced <span class="hint">Optional</span><input type="text" id="rqDate" placeholder="e.g. March 2027"></label>
+      <label class="field">Anything else? <span class="hint">Optional. Preferred category, budget, link</span><input type="text" id="rqNote"></label>
+      <button type="button" class="btn2" id="rqSend">Send request</button>
+    </div>
+    <div class="card">
+      <h3>Following</h3>
+      <p class="hint" style="margin:0">You'll get a Telegram message from our bot the moment these open.</p>
+      <div id="followList" class="olist"></div>
+    </div>
+    <div class="card" id="myReqCard" hidden>
+      <h3>Your requests</h3>
+      <div id="myReqs" class="olist"></div>
+    </div>
+  </section>
+
+  <section class="view" data-view="sale" hidden>
+    <h2>Tickets for sale</h2>
+    <p class="lede">Extra tickets we're selling or helping others sell. To buy, message the contact on the listing.</p>
+    <div class="note" style="margin-bottom:16px">⚠️ Tickets marked HELP TO SELL were not purchased by JTS. JTS is not responsible for these tickets or any deal between buyer and seller. Please check everything with the seller before paying.</div>
+    <div id="saleList"></div>
+    <div class="card">
+      <h3>Want us to help sell yours?</h3>
+      <p class="hint" style="margin:0">Message an admin with the event, category, details and your price.</p>
+      <button type="button" class="btn2" data-goview="admin">Talk to admin</button>
+    </div>
+  </section>
+
+  <section class="view" data-view="faq" hidden>
+    <h2>FAQ</h2>
+    <p class="lede">Most answers are here. Still stuck? Talk to an admin.</p>
+    <input type="text" id="faqSearch" placeholder="Search, e.g. refund, payment, front row" aria-label="Search FAQ" style="margin-bottom:14px">
+    <div class="card">
+      <h3>Frequently asked</h3>
+      <div id="faqList"></div>
+      <p class="hint" id="faqEmpty" hidden style="margin:0">No match. Try another word, or ask an admin.</p>
+    </div>
+    <div class="card">
+      <h3>Terms &amp; Conditions</h3>
+      <ol class="tnc" id="tncList"></ol>
+    </div>
+  </section>
+
+  <section class="view" data-view="admin" hidden>
+    <h2>Talk to admin</h2>
+    <p class="lede">Both admins can help with anything. Message whoever you like, and your chat opens in Telegram.</p>
+    <div class="card">
+      <h3>Our admins</h3>
+      <div id="adminList" class="olist"></div>
+    </div>
+    <div class="card">
+      <h3>Start with</h3>
+      <div class="qchips">
+        <button type="button" data-msg="Hi! I have a question about my order [order no.].">About my order</button>
+        <button type="button" data-msg="Hi! I've paid. Can you check my payment for [order no.]?">Check my payment</button>
+        <button type="button" data-msg="Hi! When will my refund be processed?">My refund</button>
+        <button type="button" data-msg="Hi! Can you take slots for this event: ">Special request</button>
+      </div>
+      <div class="note info">Please check the FAQ first. Admins reply in order, so one message is enough.</div>
+    </div>
+  </section>
+
+  <!-- ===== PRE-BOOKING FLOW ===== -->
+  <section class="step" data-step="pre-info" hidden>
+    <img id="prePoster" class="evposter" alt="" hidden>
+    <div class="hero" id="preHero"></div>
+    <div class="card">
+      <h3>How pre-booking works</h3>
+      <ol class="howto">
+        <li><b>Pay a deposit now</b><span>This locks your slot before details are out.</span></li>
+        <li><b>Details get announced</b><span>We message you the real booking form with prices and service charge.</span></li>
+        <li><b>Deposit is deducted later</b><span>RM30 / S$10 per ticket comes off what you pay when booking opens.</span></li>
+      </ol>
+      <div class="note">Pre-booking slots are limited. Once they're gone, this closes.</div>
+    </div>
+    <div class="card">
+      <h3>Deposit rules</h3>
+      <label class="check"><input type="checkbox" id="p1"> Full deposit refund if the event is cancelled or not held in this city.</label>
+      <label class="check"><input type="checkbox" id="p2"> If I cancel, there's no refund. To get my deposit back, I must find a replacement.</label>
+      <label class="check"><input type="checkbox" id="p3"> A pre-booking slot doesn't guarantee a ticket. If ticketing fails, the usual 50% service charge refund applies.</label>
+    </div>
+  </section>
+
+  <section class="step" data-step="pre-form" hidden>
+    <h2>Your pre-booking</h2>
+    <p class="lede">Short version. We'll ask for the full details once the event is announced.</p>
+    <div class="prefill" id="pPrefill"></div>
+    <div class="card">
+      <h3>How many?</h3>
+      <div class="seg" id="pQty"><button type="button" data-n="1">1 ticket</button><button type="button" data-n="2" class="on">2 tickets</button></div>
+    </div>
+    <div class="card">
+      <h3>What are you aiming for?</h3>
+      <div class="opts" data-name="pTier">
+        <label class="opt"><input type="radio" name="pTier" value="VIP / front zones"><span>VIP / front zones<small>Highest demand, hardest to get</small></span></label>
+        <label class="opt"><input type="radio" name="pTier" value="Mid categories"><span>Mid categories<small>Good view, better chance</small></span></label>
+        <label class="opt"><input type="radio" name="pTier" value="Any ticket"><span>Any ticket<small>I just want to be there</small></span></label>
+      </div>
+    </div>
+    <div class="card">
+      <h3>If there's more than one show date</h3>
+      <div class="opts" data-name="pDay">
+        <label class="opt"><input type="radio" name="pDay" value="Any day"><span>Any day is fine</span></label>
+        <label class="opt"><input type="radio" name="pDay" value="Weekend only"><span>Weekend only</span></label>
+        <label class="opt"><input type="radio" name="pDay" value="Tell me first"><span>Ask me first</span></label>
+      </div>
+      <label class="field">Notes <span class="hint">Optional</span><input type="text" id="pNote" placeholder="e.g. bias is in the front section"></label>
+    </div>
+  </section>
+
+  <section class="step" data-step="pre-pay" hidden>
+    <h2>Pay deposit</h2>
+    <p class="lede">Your slot is held once we confirm your payment.</p>
+    <div class="card">
+      <h3>I'm paying from</h3>
+      <div class="seg" id="pRegion"><button type="button" data-r="MY" class="on">Malaysia (RM)</button><button type="button" data-r="SG">Singapore (S$)</button></div>
+    </div>
+    <div class="card">
+      <div class="paynow"><div><small>Deposit now</small><div class="big" id="pAmt"></div></div><div style="text-align:right"><small>Per ticket</small><b id="pPer"></b></div></div>
+    </div>
+    <div class="card">
+      <h3>Pay with</h3>
+      <div class="opts" data-name="ppm" id="pPm"></div>
+    </div>
+    <div class="card" id="pAcct" hidden></div>
+    <div class="card">
+      <h3>Proof of payment</h3>
+      <div class="upload" id="pUp"><input type="file" accept="image/*,application/pdf" aria-label="Upload deposit proof"><span class="ic">↑</span><span class="txt">Upload your receipt<br><small class="hint">Screenshot or PDF</small></span></div>
+    </div>
+  </section>
+
+  <section class="step" data-step="bal-pay" hidden>
+    <h2>Pay your balance</h2>
+    <p class="lede" id="balLede"></p>
+    <div class="card">
+      <div class="paynow"><div><small>Balance to pay</small><div class="big" id="balAmt"></div></div><div style="text-align:right"><small>Pay by</small><b id="balDue"></b></div></div>
+      <div class="tgmsg" id="balBreak" style="max-height:none"></div>
+      <div class="note ok">This is based on your highest choice. If we get a cheaper ticket, we refund the difference.</div>
+    </div>
+    <div class="card">
+      <h3>Pay with</h3>
+      <div class="opts" id="balPm"></div>
+    </div>
+    <div class="card" id="balAcct" hidden></div>
+    <div class="card">
+      <h3>Proof of payment</h3>
+      <div class="upload" id="balUp"><input type="file" accept="image/*,application/pdf" aria-label="Upload balance receipt"><span class="ic">↑</span><span class="txt">Upload your receipt<br><small class="hint">Screenshot or PDF</small></span></div>
+    </div>
+  </section>
+
+  <section class="step" data-step="bal-done" hidden>
+    <div class="done-banner"><svg class="smiley" style="width:48px;height:48px" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="17" fill="#f7c64a" stroke="#1d1a2e" stroke-width="2.5"/><ellipse cx="14.5" cy="16" rx="2" ry="3.2" fill="#1d1a2e"/><ellipse cx="25.5" cy="16" rx="2" ry="3.2" fill="#1d1a2e"/><path d="M11.5 22.5 Q20 31 28.5 22.5" fill="none" stroke="#1d1a2e" stroke-width="2.5" stroke-linecap="round"/></svg><div><b class="t">Receipt sent!</b><span id="balDoneTxt"></span></div></div>
+    <div class="card">
+      <h3>What happens next</h3>
+      <p class="hint" style="margin:0">An admin checks your payment and confirms it in Telegram. Then you're all set for ticketing day.</p>
+    </div>
+  </section>
+
+  <section class="step" data-step="pre-done" hidden>
+    <div class="done-banner"><svg class="smiley" style="width:48px;height:48px" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="17" fill="#f7c64a" stroke="#1d1a2e" stroke-width="2.5"/><ellipse cx="14.5" cy="16" rx="2" ry="3.2" fill="#1d1a2e"/><ellipse cx="25.5" cy="16" rx="2" ry="3.2" fill="#1d1a2e"/><path d="M11.5 22.5 Q20 31 28.5 22.5" fill="none" stroke="#1d1a2e" stroke-width="2.5" stroke-linecap="round"/></svg><div><b class="t">Slot locked!</b><span id="pDoneTxt"></span></div></div>
+    <div class="card">
+      <h3>Copy of your answers</h3>
+      <div class="tgmsg" id="pCopy"></div>
+      <p class="hint" style="margin:0">Sent to your Telegram chat with our bot and your email.</p>
+    </div>
+  </section>
+
+  <!-- 0 EVENT -->
+  <section class="step" data-step="event">
+    <div class="note info" id="resumeBox" hidden style="margin-bottom:14px;display:grid;gap:10px">
+      <span>You have an unfinished booking for this event. Continue where you left off?</span>
+      <div class="btnrow"><button type="button" class="btn2 sm" id="resumeYes">Continue</button><button type="button" class="btn2 sm ghost" id="resumeNo">Start over</button></div>
+    </div>
+    <img id="evPoster" class="evposter" alt="" hidden>
+    <div class="hero" id="hero"></div>
+    <div class="card">
+      <h3 id="scHead">Our service charge, per ticket</h3>
+      <table id="scTable"></table>
+      <div class="note" id="feeNote"></div>
+    </div>
+    <div class="card" id="evNotesCard" hidden>
+      <h3>Good to know</h3>
+      <div id="evNotes" class="evnotes"></div>
+    </div>
+  </section>
+
+  <!-- 1 READ -->
+  <section class="step" data-step="read" hidden>
+    <h2>Read before you book</h2>
+    <p class="lede" id="readLede">Booking with us means you agree to all of this. Scroll to the end of each box to unlock its checkbox.</p>
+    <div class="card">
+      <h3>FAQ <span class="readstate" id="faqState">Not read yet</span></h3>
+      <button type="button" class="btn2 sm ghost readAgain" id="faqBoxAgain" data-box="faqBox" hidden>Read again</button>
+      <div class="scrollbox" id="faqBox" tabindex="0"></div>
+      <label class="check locked" id="faqChk"><input type="checkbox" id="a1" disabled> I have read all 18 FAQ answers.</label>
+    </div>
+    <div class="card">
+      <h3>Terms &amp; Conditions <span class="readstate" id="tncState">Not read yet</span></h3>
+      <button type="button" class="btn2 sm ghost readAgain" id="tncBoxAgain" data-box="tncBox" hidden>Read again</button>
+      <div class="scrollbox" id="tncBox" tabindex="0"></div>
+      <label class="check locked" id="tncChk"><input type="checkbox" id="a2" disabled> I agree to the Terms &amp; Conditions.</label>
+    </div>
+    <div class="card">
+      <h3>Please confirm</h3>
+      <label class="check"><input type="checkbox" id="a3"> <span id="a3txt"></span></label>
+      <label class="check"><input type="checkbox" id="a4"> <span id="a4txt"></span></label>
+    </div>
+  </section>
+
+  <!-- 2 MEMBERSHIP (only events that need it) -->
+  <section class="step" data-step="member" hidden>
+    <h2 id="memTitle">Your presale details</h2>
+    <p class="lede" id="memLede"></p>
+    <div class="card">
+      <label class="field" id="memField"><span id="memLabel">Membership number</span>
+        <span class="hint">Check it carefully. Mistakes from your side are not our responsibility.</span>
+        <input type="text" id="mem" autocomplete="off">
+      </label>
+      <div class="upload" id="memUp"><input type="file" accept="image/*" aria-label="Upload presale screenshot"><span class="ic">↑</span><span class="txt">Screenshot of your presale application<br><small class="hint">Required for this presale</small></span></div>
+    </div>
+  </section>
+
+  <!-- 3 DETAILS -->
+  <section class="step" data-step="details" hidden>
+    <h2>Your details</h2>
+    <p class="lede">We use these when buying your ticket. They must match your IC or passport exactly.</p>
+    <div class="prefill" id="prefill" hidden>✓ Filled in from your last order <button type="button" id="clearPrefill">Clear all</button></div>
+    <div class="card">
+      <label class="field">Telegram username <span class="hint">Taken from Telegram automatically</span>
+        <input type="text" id="tg" readonly></label>
+      <div class="row2">
+        <label class="field">First name<input type="text" id="fn"></label>
+        <label class="field">Last name <input type="text" id="ln"></label>
+      </div>
+      <span class="hint" style="margin-top:-6px">Malay customers: include bin / binti.</span>
+      <label class="field">Phone<input type="tel" id="ph"></label>
+      <label class="field">Email<input type="email" id="em"></label>
+      <label class="field"><span id="idLabel">IC number</span> <span class="hint" id="idHint"></span>
+        <input type="text" id="ic"></label>
+    </div>
+    <div class="card">
+      <h3>Refund account</h3>
+      <div class="row2">
+        <label class="field">Bank<select id="bank"><option>Maybank</option><option>CIMB</option><option>Public Bank</option><option>RHB</option><option>Bank Islam</option><option>Hong Leong</option><option>AmBank</option><option>BSN</option><option>DBS / POSB (SG)</option><option>OCBC (SG)</option><option>Other</option></select></label>
+        <label class="field">Account no.<input type="text" id="acc" inputmode="numeric"></label>
+      </div>
+      <label class="field">Account holder<input type="text" id="accn"></label>
+    </div>
+    <div class="card" id="platCard">
+      <h3 id="platHead">BookMyShow account</h3>
+      <p class="hint" style="margin:0" id="platIntro"></p>
+      <label class="field"><span id="platEmailLbl">BookMyShow email</span><input type="email" id="pe"></label>
+      <label class="field"><span id="platPwLbl">BookMyShow password</span>
+        <div class="pw"><input type="password" id="pp" autocomplete="off"><button type="button" id="pwToggle">Show</button></div>
+      </label>
+      <div class="note info">Only the Jaja team can see your login, and we delete it after ticketing day. Please change your password once the sale is over.</div>
+    </div>
+  </section>
+
+  <!-- 4 TICKETS -->
+  <section class="step" data-step="tickets" hidden>
+    <h2>Your tickets</h2>
+    <p class="lede">We follow exactly what you choose here. Don't tick anything you're not okay with.</p>
+    <div class="card">
+      <h3>How many?</h3>
+      <div class="seg" id="qty"></div>
+      <div class="note info" id="qtyNote"></div>
+    </div>
+    <div class="card" id="seatCardPlan" hidden>
+      <h3>Seat plan</h3>
+      <div id="seatPlan"></div>
+    </div>
+    <div class="card" id="choices"></div>
+    <div class="card" id="seatCard">
+      <h3>Seats together?</h3>
+      <p class="hint" style="margin:0">Side-by-side seats are really hard. We'll try our best but can't promise.</p>
+      <div class="opts" data-name="seat">
+        <label class="opt"><input type="radio" name="seat" value="side"><span>Side by side only<small>If we can't get them together, we don't buy.</small></span></label>
+        <label class="opt"><input type="radio" name="seat" value="sep"><span>Separated seats are okay<small>As long as we get the tickets.</small></span></label>
+      </div>
+    </div>
+    <div class="card">
+      <h3>If all your choices sell out</h3>
+      <div class="opts" data-name="flex">
+        <label class="opt"><input type="radio" name="flex" value="strict"><span>Only buy my choices<small>If they're all gone, we stop.</small></span></label>
+        <label class="opt"><input type="radio" name="flex" value="any"><span id="anyTxt">Get me any ticket, even the cheapest<small>As long as I can attend.</small></span></label>
+      </div>
+    </div>
+    <div class="card" id="waitCard">
+      <h3>If your 1st choice is sold out when we get in</h3>
+      <p class="hint" style="margin:0">Your next choice may sell out while we wait, and sold-out tickets may not come back.</p>
+      <div class="opts" data-name="wait">
+        <label class="opt"><input type="radio" name="wait" value="0"><span>Buy my next choice straight away</span></label>
+        <label class="opt"><input type="radio" name="wait" value="30"><span>Wait 30 minutes first</span></label>
+        <label class="opt"><input type="radio" name="wait" value="60"><span>Wait 1 hour first</span></label>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 REVIEW -->
+  <section class="step" data-step="review" hidden>
+    <h2>Check your order</h2>
+    <p class="lede">This is exactly what we'll follow on ticketing day. A copy goes to your Telegram and email when you submit.</p>
+    <div class="card"><div class="review" id="reviewList"></div></div>
+    <div class="card">
+      <label class="check"><input type="checkbox" id="confirm"> I've checked everything above. These are my own choices, and I accept whatever ticket Jaja gets based on them.</label>
+    </div>
+  </section>
+
+  <!-- 6 PAY -->
+  <section class="step" data-step="pay" hidden>
+    <h2 id="payTitle">Pay booking fee</h2>
+    <p class="lede" id="payLede">Pay only the booking fee now. Full payment request comes in Telegram at least 1 day before ticketing. Don't pay the full amount yet.</p>
+    <div class="card">
+      <h3>I'm paying from</h3>
+      <div class="seg" id="region"><button type="button" data-r="MY" class="on">Malaysia (RM)</button><button type="button" data-r="SG">Singapore (S$)</button></div>
+    </div>
+    <div class="card">
+      <div class="paynow"><div><small>Pay now</small><div class="big" id="payNow"></div></div><div style="text-align:right"><small id="bfLbl">Booking fee</small><b id="bfLine"></b></div></div>
+      <table id="estTable"></table>
+      <div class="note ok" id="estNote"></div>
+    </div>
+    <div class="card">
+      <h3>Pay with</h3>
+      <div class="opts" data-name="pm" id="pmOpts"></div>
+    </div>
+    <div class="card" id="acctCard"></div>
+    <div class="card">
+      <h3>Proof of payment</h3>
+      <div class="upload" id="payUp"><input type="file" accept="image/*,application/pdf" aria-label="Upload payment proof"><span class="ic">↑</span><span class="txt">Upload your receipt<br><small class="hint">Screenshot or PDF</small></span></div>
+    </div>
+  </section>
+
+  <!-- 7 DONE -->
+  <section class="step" data-step="done" hidden>
+    <div class="done-banner"><svg class="smiley" style="width:48px;height:48px" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="17" fill="#f7c64a" stroke="#1d1a2e" stroke-width="2.5"/><ellipse cx="14.5" cy="16" rx="2" ry="3.2" fill="#1d1a2e"/><ellipse cx="25.5" cy="16" rx="2" ry="3.2" fill="#1d1a2e"/><path d="M11.5 22.5 Q20 31 28.5 22.5" fill="none" stroke="#1d1a2e" stroke-width="2.5" stroke-linecap="round"/></svg><div><b class="t">Order received!</b><span>Order no. <b id="oid"></b></span></div></div>
+    <div class="card">
+      <h3>Copy of your answers</h3>
+      <div class="tgmsg" id="tgCopy"></div>
+      <p class="hint" style="margin:0">Sent to your Telegram chat with our bot and to <b id="emCopy"></b>. Keep it for your records.</p>
+    </div>
+    <div class="card">
+      <h3>What happens next</h3>
+      <ol class="timeline">
+        <li class="done"><span>Order and booking fee received<small>Just now</small></span></li>
+        <li class="now"><span>We check your payment<small>Usually within a few hours</small></span></li>
+        <li><span>Full payment request<small>In Telegram, at least 1 day before ticketing</small></span></li>
+        <li><span>Ticketing day: we queue for you<small>Wait for our update within 1.5 hours</small></span></li>
+        <li><span>Secured, or refunded<small>E-tickets and refunds within 48 hours</small></span></li>
+      </ol>
+    </div>
+    <div class="card">
+      <h3>Need more tickets?</h3>
+      <p class="hint" style="margin:0" id="moreTxt"></p>
+      <div class="btnrow"><button type="button" class="btn2" id="orderMore">Order more tickets</button></div>
+    </div>
+  </section>
+</div>
+
+<div class="mainbtn" hidden><div class="why" id="why"></div><button type="button" id="next">Continue</button></div>
+<div class="tabbar" id="tabbar"><nav>
+  <button type="button" data-tab="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9H14v-6h-4v6H3z"/></svg><span>Home</span></button>
+  <button type="button" data-tab="events"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 8a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 0-2 2H5a2 2 0 0 0-2-2v-2a2 2 0 0 0 0-4z"/><path d="M14 6v12" stroke-dasharray="2 2"/></svg><span>Events</span></button>
+  <button type="button" data-tab="request"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z"/></svg><span>Request</span></button>
+  <button type="button" data-tab="faq"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.7M12 17h.01"/></svg><span>FAQ</span></button>
+  <button type="button" data-tab="admin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9.5h8M8 12.5h5" stroke-linecap="round"/></svg><span>Admin</span></button>
+</nav></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ====== EDIT THIS ONE LINE: your Apps Script Web app link (ends with /exec) ====== */
+const API_URL = "https://script.google.com/macros/s/AKfycbyNS0QL3FDrEVxqaRd-40eUS-_KiOdtE70iZAh_Y9Yc5g_LKn14uGdLUNyMvNGHc88V/exec";
+/* ================================================================================= */
+
+/* ===== JTS MINI APP · client ===== */
+const FAQ = [
+ ["How much is the service charge?","It depends on ticket type, sales and demand. <strong>Rates are announced for each ticketing.</strong>"],
+ ["Does the service charge include ticketing website fees?","No. Ticketing website fees are <strong>not included</strong>."],
+ ["Is the service charge refundable?","<strong>Usually 50% refundable</strong>, and this will be announced. Ticket price and other fees are <strong>fully</strong> refundable."],
+ ["Do you accept pre-booking slots?","Yes, depending on demand. Pre-booking needs a deposit of RM30 / S$10 per ticket, deducted later."],
+ ["How do I book a slot?","Open the Events tab in this app and tap Book now on any open event."],
+ ["Do I need to pay during slot claim?","Only the booking fee (or deposit for pre-booking). Full payment comes later."],
+ ["Are tickets guaranteed? Can I request front row or low queue?","Tickets are <strong>not guaranteed</strong>. No special front row requests. <strong>Do not book with us if you want guaranteed tickets or front row.</strong>"],
+ ["What payment methods do you accept?","MY: DuitNow. SG: PayNow. Others: PayPal (+6%), Wise, instant transfer."],
+ ["Can I cancel after paying the service charge?","Yes, but the service charge is <strong>non-refundable if there's no replacement</strong>. Please find a replacement."],
+ ["Do you accept special request events?","Yes. Use the Request tab, or talk to an admin."],
+ ["How is the foreign exchange rate calculated?","Based on the current rate, plus a little extra because our bank card may have higher rates. Example: add RM0.10 per SGD, or RM0.005 per THB."],
+ ["How do I know you are trusted?","Check our <strong>pinned tweet</strong> on X (@_ZH4NGH40) for proofs and feedback."],
+ ["When do I pay the ticket price? Can I pay after ticketing?","Full ticket payment is required <strong>at least 1 day before ticketing</strong>. We don't accept payment after ticketing."],
+ ["If presale fails, can it move to general sale?","No. The service charge is <strong>per ticket and per ticketing type</strong>. Moving to the next sale would mean non-refundable fees if we fail again."],
+ ["Can we choose our preferred specific zones?","If the zone has left and right sections, yes, and we'll try your preference. <strong>But if your preferred zone is sold out, we move to your next choice directly.</strong>"],
+ ["How many members and slots do you have?","4 main members (more added based on demand). Tickets are shared equally among members, and all customers are treated equally."],
+ ["How long is the refund process? When will e-tickets be sent?","Within <strong>48 hours after ticketing</strong>."],
+ ["What should I do on ticketing day?","Wait for our update within <strong>1.5 hours</strong>."]
+];
+const TNC = [
+ "Reading the FAQ and T&amp;C is mandatory before booking.",
+ "Booking means you agree to all FAQ and T&amp;C.",
+ "Service charge is 50% refundable if we fail to get tickets, unless stated otherwise.",
+ "Tickets are not guaranteed.",
+ "No front row or low queue requests.",
+ "You need to provide your own fanclub membership.",
+ "Service charge is non-refundable if you reject the ticket after we've secured it, or if you managed to buy tickets on your own.",
+ "For Korea ticketing, you must be okay with ANY seat, including 4F.",
+ "Refunds and e-tickets will be processed within 48 hours after ticketing.",
+ "Ticketing is done manually. Results such as queue number and seats are not guaranteed.",
+ "<strong>Joy and fussy buyers will not be entertained.</strong>"
+];
+const ICON={
+  ticket:'<svg viewBox="0 0 24 24" fill="none" stroke="#1d1a2e" stroke-width="2" stroke-linejoin="round"><path d="M3 8a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 0-2 2H5a2 2 0 0 0-2-2v-2a2 2 0 0 0 0-4z"/><path d="M14 6v12" stroke-dasharray="2 2"/></svg>',
+  bell:'<svg viewBox="0 0 24 24" fill="none" stroke="#1d1a2e" stroke-width="2" stroke-linejoin="round"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>'
+};
+const STATUS={available:["Available","s-open"],limited:["Limited","s-wait"],closed:["Closed","s-full"],pre:["Pre-book","s-pre"],soon:["Coming soon","s-soon"]};
+
+/* ===== state ===== */
+let AGREED=false, TERMS_VER="1", DRAFT=null, ORDERS_LOADING=false, FORSALE=[], RM_SGD=0, PAYLINK="", INIT="", USER=null, PAY={}, EVENTS={}, LIST=[], ORDERS=[], ADMINS=[], follows=new Set(), REQS=[];
+let E=null, S=null, CUR="", M="home", VIEW="home", FILTER="all", BUSY=false;
+let P={i:0};
+const $ = id => document.getElementById(id);
+const fmt = n => Number(n).toLocaleString("en-MY",{minimumFractionDigits:2,maximumFractionDigits:2});
+const money = (n,c) => c + fmt(n);
+const esc = s => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const isOpen = e => e.status==="available"||e.status==="limited";
+function toast(msg){const t=$("toast");t.textContent=msg;t.classList.add("show");clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove("show"),3000);}
+function stCls(s){s=String(s||"").toLowerCase();if(/fail|refund|cancel/.test(s))return"s-full";if(/secured|received|open/.test(s))return"s-ok";if(/due/.test(s))return"s-wait";return"s-soon";}
+function call(fn,...args){
+  return fetch(API_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({api:fn,args})})
+    .then(r=>{ if(!r.ok) throw new Error("Connection problem. Please try again."); return r.json(); })
+    .then(j=>{ if(!j.ok) throw new Error(j.error||"Something went wrong"); return j.result; });
+}
+/* Phone photos are 3–5 MB. Shrink images to max 1600px as JPEG (~200–400 KB, still sharp enough to read)
+   before sending. PDFs are sent as they are. */
+function fileData(input){
+  const f=input.files&&input.files[0]; if(!f) return Promise.resolve(null);
+  const read=blob=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(",")[1]);r.onerror=()=>rej(new Error("Couldn't read that file"));r.readAsDataURL(blob);});
+  if(!/^image\//.test(f.type)||/gif|svg/.test(f.type)){
+    if(f.size>8e6) return Promise.reject(new Error("That file is too big (max 8 MB). Try a screenshot instead."));
+    return read(f).then(data=>({name:f.name,mime:f.type||"application/octet-stream",data}));
+  }
+  return new Promise((res,rej)=>{
+    const url=URL.createObjectURL(f), img=new Image();
+    img.onload=()=>{
+      const MAX=1600, k=Math.min(1,MAX/Math.max(img.width,img.height));
+      const c=document.createElement("canvas"); c.width=Math.round(img.width*k); c.height=Math.round(img.height*k);
+      const g=c.getContext("2d"); g.fillStyle="#fff"; g.fillRect(0,0,c.width,c.height); g.drawImage(img,0,0,c.width,c.height);
+      URL.revokeObjectURL(url);
+      c.toBlob(b=>{
+        if(!b||b.size>=f.size) return read(f).then(data=>res({name:f.name,mime:f.type,data}),rej);   // already small: keep original
+        read(b).then(data=>res({name:f.name.replace(/\.[^.]+$/,"")+".jpg",mime:"image/jpeg",data}),rej);
+      },"image/jpeg",0.82);
+    };
+    img.onerror=()=>{ URL.revokeObjectURL(url); if(f.size>8e6) rej(new Error("That file is too big (max 8 MB).")); else read(f).then(data=>res({name:f.name,mime:f.type,data}),rej); };
+    img.src=url;
+  });
+}
+function busy(on,label){BUSY=on;$("next").disabled=on||!!$("why").textContent;if(on)$("next").textContent=label||"Sending…";}
+
+/* ===== boot ===== */
+function boot(){
+  const tg=window.Telegram&&Telegram.WebApp;
+  INIT=tg?tg.initData:"";
+  PAYLINK=new URLSearchParams(location.search).get("pay")||(tg&&tg.initDataUnsafe&&tg.initDataUnsafe.start_param)||"";
+  if(!INIT){ $("loading").innerHTML=`<b>Open JTS from Telegram</b><span>This page only works inside the Telegram bot.</span>`; return; }
+  if(API_URL.indexOf("PASTE")===0){ $("loading").innerHTML=`<b>Almost there!</b><span>API_URL at the top of the script still needs your Apps Script /exec link.</span>`; return; }
+  call("bootstrap",INIT).then(onBoot).catch(e=>{
+    $("loading").innerHTML=`<b>Can't open JTS right now</b><span>${esc(e.message||e)}</span>`;
+  });
+}
+function onBoot(b){
+  if(b.closed){ $("loading").innerHTML=`<b>JTS ♡</b><span>${esc(b.closed)}</span>`; return; }
+  USER=b.user; DRAFT=b.draft||null; TERMS_VER=String(b.termsVersion||"1"); AGREED=!!(b.profile&&b.profile.agreed&&b.profile.agreed===TERMS_VER); PAY=b.pay; RM_SGD=b.rmToSgd||0; ADMINS=b.admins; FORSALE=b.forSale||[]; follows=new Set(b.follows);
+  ORDERS=[]; ORDERS_LOADING=true;
+  b.events.forEach(e=>EVENTS[e.id]=e);
+  // one card per event group; each row in the group is one sale (membership, Mastercard, general…)
+  const groups={};
+  b.events.forEach(e=>{const g=e.group||e.id;(groups[g]=groups[g]||[]).push(e);});
+  const RANK={pre:5,available:4,limited:3,soon:2,closed:1};
+  LIST=Object.keys(groups).map(g=>{
+    const rows=groups[g], f=rows.find(r=>r.poster)||rows[0];
+    const status=rows.map(r=>r.status).sort((a,c)=>(RANK[c]||0)-(RANK[a]||0))[0];
+    const kind=status==="closed"?"wait":status==="pre"?"pre":status==="soon"?"soon":"book";
+    return {id:g,status,kind,fandom:rows[0].fandom,title:rows[0].title,city:rows[0].city,date:rows[0].date,
+      bg:`linear-gradient(160deg,${rows[0].tint},#c9b8f8)`,short:rows[0].short,poster:f.poster,
+      sales:rows.map(r=>({id:r.id,name:r.saleName||r.saleLabel,status:r.status,type:r.type})),
+      sale:rows.map(r=>r.saleName||r.saleLabel).filter(Boolean).join(" · ")};
+  });
+  $("helloName").textContent=`Hi ${USER.first_name||"there"} ♡`;
+  $("tg").value=USER.username?"@"+USER.username:"(no Telegram username)";
+  if(b.profile){
+    const p=b.profile; [["fn",p.fn],["ln",p.ln],["ph",p.ph],["em",p.em],["ic",p.ic],["acc",p.acc],["accn",p.accn],["pe",p.pe]].forEach(([k,v])=>$(k).value=v||"");
+    if(p.bank) $("bank").value=p.bank;
+    $("prefill").hidden=false;
+  }
+  renderAdmins(); $("tncList").innerHTML=TNC.map(t=>`<li><span>${t}</span></li>`).join("");
+  $("loading").hidden=true; showHome("home");
+  // orders load in the background so the page shows straight away
+  call("myOrders",INIT).then(list=>{
+    const fresh=list.map(o=>({id:o.id,ev:o.ev,st:[o.status||"Received",stCls(o.status)],note:"",pay:o.pay,region:o.region}));
+    const ids=new Set(fresh.map(o=>o.id)); ORDERS=ORDERS.filter(o=>!ids.has(o.id)).concat(fresh);
+    ORDERS_LOADING=false; if(M==="home"&&VIEW==="home") renderHome();
+    if(PAYLINK){ const o=ORDERS.find(x=>x.id===PAYLINK); if(o&&o.pay) startBal(o.id); PAYLINK=""; }
+  }).catch(()=>{ ORDERS_LOADING=false; if(M==="home"&&VIEW==="home") renderHome(); });
+}
+
+/* ===== home tabs ===== */
+function slotTxt(e){return {available:"Slots available",limited:"Limited slots left. Book soon",closed:"Closed · join the waitlist",pre:"Pre-booking open · limited slots",soon:"Not open yet"}[e.status]||"";}
+function evCard(e){
+  const [lab,cls]=STATUS[e.status]||["",""];
+  const openSales=e.sales.filter(s=>isOpen(s));
+  const preSale=e.sales.find(s=>s.status==="pre");
+  const act={book:openSales.length===1?`<button type="button" class="btn2 sm" data-book="${openSales[0].id}">Book now</button>`:"",
+    pre:`<button type="button" class="btn2 sm" data-pre="${preSale?preSale.id:e.id}">Pre-book</button>`,
+    wait:`<button type="button" class="btn2 sm ghost" data-wait="${e.id}">Join waitlist</button>`,
+    soon:`<button type="button" class="btn2 sm ghost" data-follow="${e.id}">${follows.has(e.id)?"Following ✓":"Notify me"}</button>`}[e.kind]||"";
+  return `<div class="evcard">${e.poster?`<div class="poster has-img" style="background-image:url('${esc(e.poster)}')" role="img" aria-label="${esc(e.title)} poster"></div>`:`<div class="poster" style="background:${esc(e.bg)}">${esc(e.short)}</div>`}<div class="evbody">
+    <div class="evtop"><span class="status ${cls}">${lab}</span></div>
+    <h4>${esc(e.title)}</h4><div class="evmeta">${esc(e.city)} · ${esc(e.date)}${e.sales.length===1?`<br>${esc(e.sale)}`:""}</div>
+    <div class="evslots">${slotTxt(e)}</div>
+    ${e.sales.length>1?`<div class="sales">${e.sales.map(s=>`<div class="salerow"><span>${esc(s.name)}</span>${isOpen(s)?`<button type="button" class="btn2 sm" data-book="${s.id}">Book</button>`:`<span class="status ${(STATUS[s.status]||["","s-full"])[1]}">${(STATUS[s.status]||["Closed"])[0]}</span>`}</div>`).join("")}</div>`:""}
+    <div class="evact">${act}${e.kind!=="soon"?`<button type="button" class="bell ${follows.has(e.id)?"on":""}" data-follow="${e.id}" aria-label="Notify me">${ICON.bell}</button>`:""}</div></div></div>`;
+}
+function renderEvents(){
+  [...$("filters").children].forEach(b=>b.classList.toggle("on",b.dataset.f===FILTER));
+  const L=LIST.filter(e=>FILTER==="all"||e.fandom===FILTER||(FILTER==="open"?isOpen(e):e.status===FILTER));
+  $("evList").innerHTML=L.map(evCard).join("")||`<p class="hint">Nothing here right now. Tap the bell on any event to be notified.</p>`;
+}
+function renderHome(){
+  $("myOrders").innerHTML=ORDERS_LOADING&&!ORDERS.length?`<p class="hint" style="margin:0">Loading your orders…</p>`:ORDERS.length?ORDERS.map(o=>`<div class="orow"><b>${esc(o.id)}</b><span class="status ${o.st[1]}">${esc(o.st[0])}</span><small>${esc(o.ev)}${o.note?" · "+esc(o.note):""}</small>${o.pay?`<button type="button" class="btn2 sm" data-paybal="${esc(o.id)}" style="grid-column:1/-1;justify-self:start">💳 Pay balance ${money(o.pay.amount,o.pay.cur)}</button>`:""}</div>`).join(""):`<p class="hint" style="margin:0">No orders yet. Your bookings will show up here.</p>`;
+  const open=LIST.filter(e=>isOpen(e)||e.status==="pre");
+  $("homeSlots").innerHTML=open.length?open.map(e=>`<div class="orow"><b>${esc(e.title)}</b><span class="status ${STATUS[e.status][1]}">${STATUS[e.status][0]}</span><small>${esc(e.city)} · ${slotTxt(e)}</small></div>`).join(""):`<p class="hint" style="margin:0">Nothing open right now.</p>`;
+  const n=LIST.filter(isOpen).length; $("openCount").textContent=n?`${n} event${n===1?"":"s"} open`:"Nothing open yet";
+  const ns=FORSALE.filter(x=>!/sold/i.test(x.status)).length; $("saleCount").textContent=ns?`${ns} listing${ns===1?"":"s"} available`:"Extra tickets from JTS & friends";
+}
+function renderFollows(){
+  const f=LIST.filter(e=>follows.has(e.id));
+  $("followList").innerHTML=f.length?f.map(e=>`<div class="orow"><b>${esc(e.title)}</b><button type="button" class="bell on" data-follow="${e.id}" aria-label="Stop following">${ICON.bell}</button><small>${esc(e.city)} · ${(STATUS[e.status]||[""])[0]}</small></div>`).join(""):`<p class="hint" style="margin:0">Nothing yet. Tap the bell on any event.</p>`;
+  $("myReqCard").hidden=!REQS.length;
+  $("myReqs").innerHTML=REQS.map(r=>`<div class="orow"><b>${esc(r.artist)}</b><span class="status s-soon">Received</span><small>${esc(r.city)} · ${r.qty} ticket(s)${r.date?" · "+esc(r.date):""}</small></div>`).join("");
+}
+function renderSale(){
+  $("saleList").innerHTML=FORSALE.length?FORSALE.map(x=>{
+    const sold=/sold/i.test(x.status);
+    const price=x.price===null?"DM for price":(typeof x.price==="number"?money(x.price,"RM"):esc(x.price));
+    return `<div class="evcard sale-card${sold?" sold":""}">${x.photo?`<div class="poster has-img" style="background-image:url('${esc(x.photo)}')" role="img" aria-label="${esc(x.event)}"></div>`:`<div class="poster" style="background:linear-gradient(160deg,#fde7f1,#c9b8f8)">${esc(String(x.cat||"").slice(0,8)||"TIX")}</div>`}<div class="evbody">
+      <div class="evtop"><span class="status ${sold?"s-full":"s-open"}">${sold?"Sold":"Available"}</span>${x.by?`<span class="sample">${esc(x.by.toUpperCase())}</span>`:""}</div>
+      <h4>${esc(x.event)}</h4><div class="evmeta">${esc(x.place||"")}${x.date?" · "+esc(x.date):""}</div>
+      <div class="kv">${x.cat?`<div><span>Category</span><b>${esc(x.cat)}</b></div>`:""}${x.details?`<div><span>Details</span><b>${esc(x.details)}</b></div>`:""}${x.remarks?`<div><span>Remarks</span><b>${esc(x.remarks)}</b></div>`:""}</div>
+      <div class="sale-price">${price}</div>
+      ${/help/i.test(x.by)?`<p class="hint" style="margin:0">Not purchased by JTS. JTS is not responsible for this ticket.</p>`:""}
+      ${sold?"":`<div class="evact" style="flex-wrap:wrap">${x.contacts.map(u=>`<a class="btn2 sm" href="https://t.me/${esc(u)}" target="_blank" rel="noopener">💬 @${esc(u)}</a>`).join("")}</div>`}
+    </div></div>`;}).join(""):`<p class="hint">No tickets for sale right now. Check back soon ♡</p>`;
+}
+function renderFaq(){
+  const q=$("faqSearch").value.trim().toLowerCase();
+  const items=FAQ.filter(([a,b])=>!q||(a+b).toLowerCase().includes(q));
+  $("faqList").innerHTML=items.map(([a,b])=>`<details class="fq"${q?" open":""}><summary>${a}</summary><p>${b}</p></details>`).join("");
+  $("faqEmpty").hidden=!!items.length;
+}
+function renderAdmins(){
+  $("adminList").innerHTML=ADMINS.map((a,i)=>`<div class="admin">${a.photo?`<img class="avatar" src="${esc(a.photo)}" alt="${esc(a.name)}">`:`<span class="avatar" style="background:${i%2?"var(--pink)":"var(--lilac)"}">${esc(String(a.name||"A").replace(/^Admin\s*/i,"").charAt(0)||"A")}</span>`}
+    <div><b>${esc(a.name)}</b><small>Bookings, payments, ticketing, refunds</small></div>
+    ${a.username?`<a class="btn2 sm" href="https://t.me/${esc(a.username)}" target="_blank" rel="noopener">Chat</a>`:`<span class="hint">Not set up</span>`}</div>`).join("");
+}
+function hideAll(){document.querySelectorAll(".step,.view").forEach(s=>s.hidden=true);}
+function showHome(v){
+  M="home"; VIEW=v; hideAll();
+  document.querySelector(`.view[data-view="${v}"]`).hidden=false;
+  $("progress").style.display="none"; $("back").hidden=true;
+  document.querySelector(".mainbtn").hidden=true; $("tabbar").hidden=false;
+  document.querySelectorAll("#tabbar button").forEach(b=>b.classList.toggle("on",b.dataset.tab===v));
+  ({home:renderHome,events:renderEvents,request:renderFollows,faq:renderFaq,admin:()=>{},sale:renderSale})[v]();
+  window.scrollTo(0,0);
+}
+function enterFlow(){hideAll();document.querySelector(".mainbtn").hidden=false;$("tabbar").hidden=true;}
+
+document.addEventListener("click",e=>{
+  const c=e.target.closest(".copy");
+  if(c){ try{navigator.clipboard.writeText(c.dataset.copy);c.textContent="Copied";}catch(_){c.textContent="Copy failed";} setTimeout(()=>c.textContent="Copy",1600); return; }
+  const pb=e.target.closest("[data-paybal]"); if(pb){ startBal(pb.dataset.paybal); return; }
+  const t=e.target.closest("[data-goview],[data-tab],[data-book],[data-pre],[data-wait],[data-follow],[data-msg],#filters button");
+  if(!t) return;
+  if(t.dataset.goview){ if(t.dataset.filter) FILTER=t.dataset.filter; showHome(t.dataset.goview); }
+  else if(t.dataset.tab) showHome(t.dataset.tab);
+  else if(t.dataset.book) startBook(t.dataset.book);
+  else if(t.dataset.pre) startPre(t.dataset.pre);
+  else if(t.dataset.wait){ t.disabled=true; call("joinWaitlist",INIT,t.dataset.wait).then(()=>{toast("You're on the waitlist. Both admins have been told.");t.textContent="On waitlist ✓";}).catch(err=>{t.disabled=false;toast(err.message);}); }
+  else if(t.dataset.follow){ const id=t.dataset.follow; follows.has(id)?follows.delete(id):follows.add(id); VIEW==="request"?renderFollows():renderEvents();
+    call("toggleFollow",INIT,id).then(on=>toast(on?"Following. We'll message you on Telegram when it opens.":"Stopped following.")).catch(err=>toast(err.message)); }
+  else if(t.dataset.msg){ try{navigator.clipboard.writeText(t.dataset.msg);toast("Message copied. Tap Chat on an admin and paste it.");}catch(_){toast(t.dataset.msg);} }
+  else if(t.closest("#filters")){ FILTER=t.dataset.f; renderEvents(); }
+});
+$("faqSearch").addEventListener("input",renderFaq);
+$("rqSend").addEventListener("click",()=>{
+  const r={artist:$("rqArtist").value.trim(),city:$("rqCity").value,qty:$("rqQty").value,date:$("rqDate").value.trim(),note:$("rqNote").value.trim(),fn:$("fn").value,ln:$("ln").value};
+  if(!r.artist){toast("Tell us the artist or event first");$("rqArtist").focus();return;}
+  $("rqSend").disabled=true; $("rqSend").textContent="Sending…";
+  call("submitRequest",INIT,r).then(()=>{REQS.unshift(r);["rqArtist","rqDate","rqNote"].forEach(id=>$(id).value="");renderFollows();toast("Request sent! Both admins have been told.");})
+    .catch(err=>toast(err.message)).finally(()=>{$("rqSend").disabled=false;$("rqSend").textContent="Send request";});
+});
+
+/* ===== booking flow ===== */
+function freshState(){return {i:0,qty:Math.min(2,E.maxQty),choices:[{c:"",s:""},{c:"",s:""},{c:"",s:""}],seat:"",flex:"",wait:"",region:"MY",pm:"",memUp:false,payUp:false,faqRead:false,tncRead:false,orderId:"",paid:null};}
+function steps(){return ["event","read",...(E.needsMembership?["member"]:[]),"details","tickets","review","pay","done"];}
+const cur=()=>steps()[S.i];
+function startBook(key){enterFlow();M="book";load(key);$("resumeBox").hidden=!(DRAFT&&DRAFT.eventId===key);}
+
+/* ===== drafts: half-filled forms are kept for 6 hours ===== */
+const DRAFT_FIELDS=["fn","ln","ph","em","ic","bank","acc","accn","pe","mem"];
+function draftNow(){
+  if(M!=="book"||!S||!E||cur()==="done"||S.i===0) return null;
+  const d={eventId:E.id,step:cur(),qty:S.qty,choices:S.choices,seat:S.seat,wait:S.wait,flex:S.flex,region:S.region,
+    faqRead:S.faqRead,tncRead:S.tncRead,checks:["a1","a2","a3","a4"].filter(id=>$(id).checked),f:{}};
+  DRAFT_FIELDS.forEach(k=>d.f[k]=$(k).value);
+  return d;
+}
+function saveDraftNow(){ const d=draftNow(); if(!d) return; DRAFT=d; call("saveDraft",INIT,d).catch(()=>{}); }
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="hidden") saveDraftNow(); });
+function pickRadio(name,v){ document.querySelectorAll(`input[name="${name}"]`).forEach(i=>{i.checked=i.value===v; const o=i.closest(".opt"); if(o) o.classList.toggle("sel",i.checked);}); }
+$("resumeNo").addEventListener("click",()=>{ $("resumeBox").hidden=true; DRAFT=null; call("saveDraft",INIT,null).catch(()=>{}); });
+$("resumeYes").addEventListener("click",()=>{
+  const d=DRAFT; if(!d) return; $("resumeBox").hidden=true;
+  DRAFT_FIELDS.forEach(k=>{ if(d.f&&d.f[k]!=null&&d.f[k]!=="") $(k).value=d.f[k]; });
+  S.qty=Math.min(d.qty||S.qty,E.maxQty); [...$("qty").children].forEach(b=>b.classList.toggle("on",+b.dataset.n===S.qty));
+  S.choices=(d.choices||S.choices).map(c=>({c:E.cats.some(x=>x[0]===c.c)?c.c:"",s:c.s||""}));
+  S.seat=d.seat||""; S.wait=d.wait||""; S.flex=d.flex||""; S.region=d.region||"MY";
+  pickRadio("seat",S.seat); pickRadio("wait",S.wait); pickRadio("flex",S.flex);
+  [...$("region").children].forEach(b=>b.classList.toggle("on",b.dataset.r===S.region));
+  [["faqRead","faqState","faqChk","a1"],["tncRead","tncState","tncChk","a2"]].forEach(([k,st,lab,chk])=>{
+    if(d[k]){ S[k]=true; $(st).textContent="Read ✓"; $(st).classList.add("ok"); $(lab).classList.remove("locked"); $(chk).disabled=false; } });
+  (d.checks||[]).forEach(id=>$(id).checked=true);
+  renderChoices();
+  let to=steps().indexOf(d.step); if(to<1) to=1; if(steps()[to]==="pay"||steps()[to]==="review") to=steps().indexOf("review");
+  go(to); toast("Welcome back! Your answers are filled in. Please re-attach any uploads.");
+});
+function load(key){
+  CUR=key; E=EVENTS[key]; S=freshState();
+  resetOpts(); ["a1","a2","a3","a4","confirm"].forEach(id=>$(id).checked=false);
+  ["memUp","payUp"].forEach(id=>{$(id).classList.remove("done");$(id).querySelector("input").value="";});
+  $("memUp").querySelector(".txt").innerHTML=`Screenshot of your presale application<br><small class="hint">Required for this presale</small>`;
+  $("payUp").querySelector(".txt").innerHTML=`Upload your receipt<br><small class="hint">Screenshot or PDF</small>`;
+  $("region").querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.r==="MY"));
+  renderEvent(); go(0);
+}
+function renderEvent(){
+  $("hero").style.setProperty("--tix",E.tint);
+  $("hero").innerHTML=`<div class="main"><span class="tag">${esc(E.saleLabel)}</span><h1>${esc(E.title)}</h1><p>${esc(E.sub)}</p>
+    <div class="facts"><div>Show<b>${esc(E.date)}</b>${esc(E.time)}</div><div>Venue<b>${esc(E.venue)}</b>${esc(E.city)}</div></div></div><div class="side"><span>ADMIT ♡ ${esc(E.id)}</span></div>`;
+  $("scHead").textContent=E.allIn?"Prices per ticket (all-in)":"Our service charge, per ticket";
+  $("evNotesCard").hidden=!E.notes; $("evNotes").textContent=E.notes||"";
+  $("a3txt").innerHTML=E.allIn
+    ?`I understand tickets are not guaranteed and zones are allocated randomly within the price category. If you can't get my tickets, it's <b>&nbsp;100%&nbsp;</b> refundable. No refunds or exchange once secured.`
+    :`I understand tickets, front rows and low queue numbers are never guaranteed. If you can't get my tickets, only <b>&nbsp;50%&nbsp;</b> of the service charge is refunded.`;
+  if(E.allIn){
+    $("scTable").innerHTML=E.cats.map(([n,p])=>`<tr><td>${esc(n)}</td><td>RM${p.toLocaleString()}</td></tr>`).join("")+
+      `<tr><td colspan="2" class="hint" style="text-align:left;font-weight:400">Price includes ticket price and ticketing fees. No service charge on top.</td></tr>`;
+  } else $("scTable").innerHTML=Object.values(E.sc).map(([n,my,sg])=>`<tr><td>${esc(n)}</td><td>RM${my} · S$${sg}</td></tr>`).join("")+
+    `<tr><td colspan="2" class="hint" style="text-align:left;font-weight:400">Non-Malaysian customers are quoted in SGD.</td></tr>`;
+  const fp=[E.feeTicket?money(E.feeTicket,E.tixCur)+" per ticket":"",E.feePct?E.feePct+"% of the ticket price":"",E.feeTxn?money(E.feeTxn,E.tixCur)+" per transaction":""].filter(Boolean);
+  const fees=fp.length?` ${E.platform} charges ${fp.join(" + ")} on top.`:` ${E.platform} fees are not included.`;
+  $("platCard").hidden=!E.needsAccount;
+  $("feeNote").textContent=E.allIn?"Can't secure? 100% refundable. No refunds or exchange once secured.":`Can't secure? We refund 50% of the service charge plus the full ticket price.${fees}`;
+  $("a4txt").innerHTML=E.allIn?`I understand all fees must be paid before ticketing.`:E.feeTicket||E.feeTxn
+    ?`I understand our service charge does <b>&nbsp;not&nbsp;</b> include ${esc(E.platform)} fees (${money(E.feeTicket,E.tixCur)}/ticket + ${money(E.feeTxn,E.tixCur)}/transaction).`
+    :`I understand our service charge does not include ${esc(E.platform)} fees, and ticket prices in ${esc(E.tixCur)} are converted at the current rate plus a small margin.`;
+  $("memTitle").textContent=`Your ${String(E.saleName||"presale").toLowerCase()} details`;
+  $("memLede").textContent=`For people who registered for the ${String(E.saleName||"presale").toLowerCase()}. Failed presale orders don't move to general sale. We refund 50% of the service charge plus the full ticket price.`;
+  $("memLabel").textContent=E.codeLabel||"Membership number"; $("memField").hidden=!E.needsCode; $("memUp").hidden=!E.needsShot;
+  $("platHead").textContent=`${E.platform} account`;
+  $("platIntro").textContent=`We'll use your ${E.platform} account to buy. Make sure it's verified. No account yet? Sign up on ${E.platform} first.`;
+  $("platEmailLbl").textContent=`${E.platform} email`; $("platPwLbl").textContent=`${E.platform} password`;
+  $("idLabel").textContent=E.inMalaysia?"IC number":"Passport number";
+  $("idHint").textContent=E.inMalaysia?"Malaysians: IC. Non-Malaysians: passport number.":"Event is outside Malaysia, so we need your passport number.";
+  const last=E.cats.length?E.cats[E.cats.length-1][0]:"the cheapest";
+  $("anyTxt").innerHTML=`Get me any ticket, even ${esc(last)}<small>As long as I can attend.</small>`;
+  $("seatCardPlan").hidden=!E.seatPlan;
+  if(E.seatPlan) $("seatPlan").innerHTML=`${E.seatPlanImg?`<img src="${esc(E.seatPlanImg)}" alt="Seat plan">`:""}<a class="btn2 sm" href="${esc(E.seatPlan)}" target="_blank" rel="noopener">Open full size</a>`;
+  $("evPoster").hidden=!E.poster; if(E.poster){$("evPoster").src=E.poster;$("evPoster").alt=E.title+" poster";}
+  $("qty").innerHTML=Array.from({length:E.maxQty},(_,k)=>`<button type="button" data-n="${k+1}" class="${S.qty===k+1?"on":""}">${k+1} ticket${k?"s":""}</button>`).join("");
+  $("qty").style.gridTemplateColumns=`repeat(${E.maxQty},1fr)`;
+  $("qtyNote").textContent=`Max ${E.maxQty} tickets per order. Need more? Submit this order first, then tap "Order more tickets" to fill in another one.`;
+  $("moreTxt").textContent=`Each order is max ${E.maxQty} tickets. Your details are saved, so a new order only asks about tickets and payment.`;
+  $("progress").innerHTML=steps().slice(0,-1).map(()=>"<span></span>").join("");
+  renderReading(); renderChoices();
+}
+function renderReading(){
+  $("faqBox").innerHTML=FAQ.map(([q,a],k)=>`<div class="qa"><b>Q${k+1}. ${q}</b><p>${a}</p></div>`).join("")+`<div class="endmark">End of FAQ ✓</div>`;
+  $("tncBox").innerHTML=`<ol class="tnc">${TNC.map(t=>`<li><span>${t}</span></li>`).join("")}</ol><div class="endmark">End of T&amp;C ✓</div>`;
+  [["faqBox","faqRead","faqState","faqChk","a1"],["tncBox","tncRead","tncState","tncChk","a2"]].forEach(([box,key,st,lab,chk])=>{
+    const b=$(box); b.scrollTop=0;
+    b.onscroll=()=>{ if(S[key]) return; if(b.scrollTop+b.clientHeight>=b.scrollHeight-8){ S[key]=true; $(st).textContent="Read ✓"; $(st).classList.add("ok"); $(lab).classList.remove("locked"); $(chk).disabled=false; update(); } };
+    $(st).textContent="Not read yet"; $(st).classList.remove("ok"); $(lab).classList.add("locked"); $(chk).disabled=true; $(chk).checked=false;
+    // repeat customer who already agreed to this version: no need to scroll again, just tick
+    b.hidden=false; $(box+"Again").hidden=true;
+    if(AGREED){ S[key]=true; $(st).textContent="Agreed before ✓"; $(st).classList.add("ok"); $(lab).classList.remove("locked"); $(chk).disabled=false; b.hidden=true; $(box+"Again").hidden=false; }
+  });
+  $("readLede").textContent=AGREED?"Welcome back! You've read these before and nothing has changed. Just tick to confirm.":"Booking with us means you agree to all of this. Scroll to the end of each box to unlock its checkbox.";
+}
+document.addEventListener("click",e=>{ const t=e.target.closest(".readAgain"); if(!t) return; const b=$(t.dataset.box); b.hidden=!b.hidden; t.textContent=b.hidden?"Read again":"Hide"; });
+function renderChoices(){
+  const names=["1st choice","2nd choice","3rd choice"];
+  let h=`<h3>Your choices, in order</h3><p class="hint" style="margin:0">You can pick the same category more than once, for example with a different section.</p>`;
+  S.choices.forEach((ch,i)=>{
+    const c=E.cats.find(x=>x[0]===ch.c);
+    h+=`<div class="choice"><div class="choice-head">${names[i]}<span>${c?money(c[1]+E.feeTicket,E.tixCur)+(E.allIn?" all-in":E.feeTicket?" incl. "+esc(E.plat)+" fee":""):(i?"optional":"required")}</span></div>
+      <label class="field">Category<select data-i="${i}" class="catSel" ${i&&!S.choices[i-1].c?"disabled":""}>${i?`<option value="">None</option>`:`<option value="">Choose…</option>`}${E.cats.map(([n,p])=>`<option value="${esc(n)}" ${ch.c===n?"selected":""}>${esc(n)} · ${esc(E.tixCur)}${p.toLocaleString()}</option>`).join("")}</select></label>
+      ${c&&E.allIn?`<p class="hint" style="margin:0">Zones are allocated randomly within this price category.</p>`:""}
+      ${c&&!E.allIn?`<label class="field">Preferred section <span class="hint">Optional. We'll try, but it's not guaranteed. If it's sold out, we go straight to your next choice.</span><input type="text" data-i="${i}" class="secIn" placeholder="${esc(E.sectionHint)}" value="${esc(ch.s)}"></label>`:""}
+    </div>`;
+  });
+  $("choices").innerHTML=h;
+  $("choices").querySelectorAll(".catSel").forEach(sel=>sel.addEventListener("change",e=>{
+    const i=+e.target.dataset.i; S.choices[i].c=e.target.value; if(!e.target.value) S.choices[i].s="";
+    for(let k=1;k<3;k++) if(!S.choices[k-1].c){S.choices[k].c="";S.choices[k].s="";}
+    renderChoices(); update();
+  }));
+  $("choices").querySelectorAll(".secIn").forEach(inp=>inp.addEventListener("input",e=>{S.choices[+e.target.dataset.i].s=e.target.value;}));
+}
+function bindOpts(g){
+  g.querySelectorAll("input").forEach(inp=>inp.addEventListener("change",()=>{
+    S[g.dataset.name]=inp.value;
+    g.querySelectorAll(".opt").forEach(o=>o.classList.toggle("sel",o.querySelector("input").checked));
+    if(g.dataset.name==="pm") renderAcct($("acctCard"),S.region,S.pm,E.id);
+    update();
+  }));
+}
+document.querySelectorAll('.opts[data-name="seat"],.opts[data-name="flex"],.opts[data-name="wait"]').forEach(bindOpts);
+function resetOpts(){document.querySelectorAll('.opts[data-name] input').forEach(i=>i.checked=false);document.querySelectorAll(".opt").forEach(o=>o.classList.remove("sel"));}
+function renderPM(){
+  const g=$("pmOpts"), list=PAY[S.region].methods;
+  if(!list.some(x=>x[0]===S.pm)) S.pm="";
+  g.innerHTML=list.map(([v,t,s])=>`<label class="opt ${S.pm===v?"sel":""}"><input type="radio" name="pm" value="${v}" ${S.pm===v?"checked":""}><span>${t}${s?`<small>${s}</small>`:""}</span></label>`).join("");
+  bindOpts(g); renderAcct($("acctCard"),S.region,S.pm,E.id);
+}
+function renderAcct(card,region,pm,code){
+  if(!pm){card.hidden=true;return;}
+  card.hidden=false;
+  const ref=`${$("tg").value} ${code}`;
+  if(pm==="wise"||pm==="paypal"){card.innerHTML=`<h3>${pm==="wise"?"Wise":"PayPal"}</h3><div class="note info">Talk to an admin first. We'll confirm the total and send the ${pm==="wise"?"Wise":"PayPal"} email to pay to.</div>`;return;}
+  const a=PAY[region];
+  card.innerHTML=`<h3>Transfer to</h3>
+    <div class="acct">${a.qrUrl?`<div class="qr has-img"><img src="${esc(a.qrUrl)}" alt="${esc(a.qr)}"></div>`:`<div class="qr">${esc(a.qr)}<br>(ask admin)</div>`}
+    <div class="kv">${a.rows.map(([k,v])=>`<div><span>${esc(k)}</span><b>${esc(v)}</b>${/\d{3}/.test(v)?`<button type="button" class="copy" data-copy="${esc(v)}">Copy</button>`:""}</div>`).join("")}</div></div>
+    ${a.qrUrl?`<p class="hint" style="margin:0">Screenshot the QR, then scan it from your banking app.</p>`:""}
+    <div class="kv"><div><span>Reference</span><b>${esc(ref)}</b><button type="button" class="copy" data-copy="${esc(ref)}">Copy</button></div></div>`;
+}
+$("qty").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;S.qty=+b.dataset.n;[...$("qty").children].forEach(x=>x.classList.toggle("on",x===b));update();});
+$("region").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;S.region=b.dataset.r;[...$("region").children].forEach(x=>x.classList.toggle("on",x===b));renderPM();update();});
+[["memUp","memUp"],["payUp","payUp"]].forEach(([id,key])=>{
+  $(id).querySelector("input").addEventListener("change",e=>{
+    const f=e.target.files[0]; if(!f) return;
+    S[key]=f.name; $(id).classList.add("done");
+    $(id).querySelector(".txt").innerHTML=`✓ ${esc(f.name.length>28?f.name.slice(0,25)+"…":f.name)}<br><small>Tap to replace</small>`;
+    update();
+  });
+});
+$("clearPrefill").addEventListener("click",()=>{["fn","ln","ph","em","ic","acc","accn","pe","pp"].forEach(id=>$(id).value="");$("prefill").hidden=true;$("fn").focus();update();});
+$("pwToggle").addEventListener("click",()=>{const p=$("pp");const show=p.type==="password";p.type=show?"text":"password";$("pwToggle").textContent=show?"Hide":"Show";});
+document.querySelectorAll("input[type=text],input[type=email],input[type=tel],input[type=password],input[type=checkbox],select").forEach(el=>{el.addEventListener("input",update);el.addEventListener("change",update);});
+
+function quote(){
+  const picked=S.choices.filter(c=>c.c).map(c=>E.cats.find(x=>x[0]===c.c)).filter(Boolean);
+  if(!picked.length) return null;
+  const top=picked.reduce((a,b)=>b[1]>a[1]?b:a);
+  const r=S.region, ccy=r==="MY"?"RM":"S$";
+  const sc=(E.sc[top[2]]||["",0,0])[r==="MY"?1:2]*S.qty;
+  if(E.allIn){
+    const rate=r==="SG"?RM_SGD:1, total=Math.ceil(top[1]*S.qty*rate*100-1e-6)/100;
+    const bf=E.booking[r]?E.booking[r]*S.qty:total;
+    return {top,r,ccy,allIn:true,total,full:!E.booking[r],bf,tix:total,txn:0,sc:0};
+  }
+  return {top,r,ccy,tix:(top[1]+E.feeTicket+top[1]*(E.feePct||0)/100)*S.qty,txn:E.feeTxn,sc,bf:E.booking[r]*S.qty};
+}
+function renderPay(){
+  const q=quote(); if(!q) return;
+  $("payNow").textContent=money(q.bf,q.ccy);
+  $("payTitle").textContent=q.full?"Pay full amount":"Pay booking fee";
+  $("payLede").textContent=q.full?"All fees must be paid before ticketing, so you pay the full amount now. It's based on your highest choice.":"Pay only the booking fee now. Full payment request comes in Telegram at least 1 day before ticketing. Don't pay the full amount yet.";
+  $("bfLbl").textContent=q.full?"Highest choice":"Booking fee";
+  $("bfLine").textContent=q.full?`${q.top[0]} × ${S.qty}`:`${q.ccy}${E.booking[q.r]} × ${S.qty}`;
+  if(q.allIn){
+    let rows=`<tr><td>${esc(q.top[0])} × ${S.qty} (ticket price + ticketing fees)</td><td>${money(q.top[1]*S.qty,"RM")}</td></tr>`;
+    if(q.ccy!=="RM") rows+=`<tr><td>In S$ (today's rate)</td><td>${money(q.total,q.ccy)}</td></tr>`;
+    if(!q.full) rows+=`<tr><td>Less booking fee paid now</td><td>−${money(q.bf,q.ccy)}</td></tr><tr><td><b>Balance later</b></td><td>${money(q.total-q.bf,q.ccy)}</td></tr>`;
+    $("estTable").innerHTML=rows;
+    $("estNote").textContent=`Based on your highest choice (${q.top[0]}). If we get a cheaper category, we refund the difference. 100% refundable if not secured.`;
+    return;
+  }
+  const same=q.ccy===E.tixCur;
+  let rows=`<tr><td>Ticket (${esc(q.top[0])})${E.feeTicket?" incl. "+esc(E.plat)+" fee":""} × ${S.qty}</td><td>${money(q.tix,E.tixCur)}</td></tr>`;
+  if(q.txn) rows+=`<tr><td>${esc(E.plat)} transaction fee</td><td>${money(q.txn,E.tixCur)}</td></tr>`;
+  rows+=`<tr><td>Jaja service charge × ${S.qty}</td><td>${money(q.sc,q.ccy)}</td></tr><tr><td>Less booking fee paid now</td><td>−${money(q.bf,q.ccy)}</td></tr>`;
+  rows+=`<tr><td><b>Balance later (estimate)</b></td><td>${same?money(q.tix+q.txn+q.sc-q.bf,q.ccy):`${money(q.tix+q.txn,E.tixCur)} + ${money(q.sc-q.bf,q.ccy)}`}</td></tr>`;
+  $("estTable").innerHTML=rows;
+  $("estNote").textContent=`Estimate uses your most expensive choice (${q.top[0]}).${same?"":` ${E.tixCur} is converted to ${q.ccy} at the current rate on payment day.`} If we get a cheaper ticket, we refund the difference.`;
+}
+const WAIT={"0":"Buy next choice straight away","30":"Wait 30 minutes","60":"Wait 1 hour"};
+function texts(){
+  return {seatTxt:S.qty>1?(S.seat==="side"?"Side by side only":"Separated seats are okay"):"n/a",
+    waitTxt:S.choices[1].c?(WAIT[S.wait]||"-"):"Only one choice",
+    flexTxt:S.flex==="any"?"Any ticket, even "+(E.cats.length?E.cats[E.cats.length-1][0]:"the cheapest"):"Stop, buy nothing else"};
+}
+function answers(){
+  const ch=S.choices.map(c=>c.c?`${c.c}${c.s?" ("+c.s+", not guaranteed)":""}`:"None"), t=texts();
+  return [["§","Event"],["Event",`${E.title} · ${String(E.saleLabel).toLowerCase()}`],["Show",`${E.date}, ${E.time} · ${E.venue}`],
+    ...(E.needsCode?[[E.codeLabel,$("mem").value]]:[]),
+    ["§","You"],["Name",`${$("fn").value} ${$("ln").value}`],["Telegram",$("tg").value],["Phone",$("ph").value],["Email",$("em").value],
+    [E.inMalaysia?"IC":"Passport",$("ic").value],["Refund to",`${$("bank").value} ${$("acc").value} ${$("accn").value}`],...(E.needsAccount?[[`${E.platform} login`,$("pe").value]]:[]),
+    ["§","Tickets"],["Quantity",String(S.qty)],["1st choice",ch[0]],["2nd choice",ch[1]],["3rd choice",ch[2]],
+    ...(S.qty>1?[["Seats",t.seatTxt]]:[]),["If 1st sold out",t.waitTxt],["If all sold out",t.flexTxt]];
+}
+function copyText(){return answers().map(([k,v])=>k==="§"?`\n▸ ${v.toUpperCase()}`:`${k}: ${v}`).join("\n").trim();}
+function renderReview(){$("reviewList").innerHTML=answers().map(([k,v])=>k==="§"?`<div class="sec">${esc(v)}</div>`:`<div><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join("");}
+function renderDone(){
+  $("oid").textContent=S.orderId; $("emCopy").textContent=$("em").value;
+  $("tgCopy").innerHTML=`<span class="from">JTS bot</span>📋 COPY OF YOUR ORDER ${esc(S.orderId)}\n\n${esc(copyText())}\n\n${E.allIn&&!E.booking[S.region]?"Full amount paid":"Booking fee paid"}: ${money(S.paid.bf,S.paid.cur)} (${esc(S.pm)})`;
+}
+async function submitBook(){
+  busy(true,"Sending your order…");
+  try{
+    const t=texts();
+    const payload={eventId:E.id,fn:$("fn").value.trim(),ln:$("ln").value.trim(),ph:$("ph").value.trim(),em:$("em").value.trim(),ic:$("ic").value.trim(),
+      bank:$("bank").value,acc:$("acc").value.trim(),accn:$("accn").value.trim(),pe:E.needsAccount?$("pe").value.trim():"",pp:E.needsAccount?$("pp").value:"",
+      mem:E.needsCode?$("mem").value.trim():"",qty:S.qty,choices:S.choices,region:S.region,pm:S.pm,...t,copy:copyText(),
+      memFile:E.needsShot?await fileData($("memUp").querySelector("input")):null,payFile:await fileData($("payUp").querySelector("input"))};
+    const r=await call("submitBooking",INIT,payload);
+    S.orderId=r.id; S.paid=r; DRAFT=null; AGREED=true;
+    ORDERS.unshift({id:r.id,ev:`${E.title} · ${S.qty} ticket(s)`,st:["Checking payment","s-soon"],note:`Booking fee ${money(r.bf,r.cur)}`});
+    busy(false); go(S.i+1);
+  }catch(err){ busy(false); update(); toast(err.message||"Something went wrong. Please try again."); }
+}
+function blocker(){
+  const v=id=>$(id).value.trim();
+  switch(cur()){
+    case "read":
+      if(!S.faqRead) return "Scroll to the end of the FAQ";
+      if(!$("a1").checked) return "Tick that you've read the FAQ";
+      if(!S.tncRead) return "Scroll to the end of the T&C";
+      if(!$("a2").checked) return "Tick that you agree to the T&C";
+      if(!$("a3").checked||!$("a4").checked) return "Tick both confirmations";
+      return "";
+    case "member":
+      if(E.needsCode&&!v("mem")) return `Enter your ${E.codeLabel.toLowerCase()}`;
+      if(E.needsShot&&!S.memUp) return "Upload the screenshot of your presale application";
+      return "";
+    case "details":
+      if(!v("fn")||!v("ln")) return "Enter your name as on your IC or passport";
+      if(!/^\+\d{9,14}$/.test(v("ph"))) return "Phone should look like +60123456789";
+      if(!/^\S+@\S+\.\S+$/.test(v("em"))) return "Check your email address";
+      if(!v("ic")) return E.inMalaysia?"Enter your IC number":"Enter your passport number";
+      if(!/^\d{6,20}$/.test(v("acc"))) return "Account number: digits only, no spaces or dashes";
+      if(!v("accn")) return "Enter the account holder's name";
+      if(E.needsAccount&&!/^\S+@\S+\.\S+$/.test(v("pe"))) return `Check your ${E.platform} email`;
+      if(E.needsAccount&&!$("pp").value) return `Enter your ${E.platform} password`;
+      return "";
+    case "tickets":
+      if(!S.choices[0].c) return "Pick your 1st choice";
+      if(S.qty>1&&!S.seat) return "Tell us if seats must be together";
+      if(S.choices[1].c&&!S.wait) return "Tell us how long to wait before your next choice";
+      if(!S.flex) return "Tell us what to do if everything sells out";
+      return "";
+    case "review": return $("confirm").checked?"":"Tick to confirm your answers";
+    case "pay": if(!S.pm) return "Choose how you'll pay"; if(!S.payUp) return "Upload your payment proof"; return "";
+  }
+  return "";
+}
+function update(){ if(BUSY) return; if(M==="pre") return updatePre(); if(M==="bal") return updateBal(); if(M==="book") updateBook(); }
+function updateBook(){
+  const st=cur();
+  $("seatCard").hidden=S.qty===1; $("waitCard").hidden=!S.choices[1].c;
+  const why=blocker();
+  $("why").textContent=st==="done"?"":why; $("next").disabled=!!why;
+  $("next").textContent=st==="review"?"Looks right, go to payment":st==="pay"?"Submit order":st==="done"?"Back to home":st==="event"?"Book this event":"Continue";
+  if(st==="pay") renderPay();
+}
+function go(i){
+  if(M==="book"&&S&&E&&i>0) setTimeout(saveDraftNow,0);
+  S.i=i; const st=cur();
+  hideAll(); document.querySelector(`.step[data-step="${st}"]`).hidden=false;
+  $("back").hidden=st==="done";
+  [...$("progress").children].forEach((p,k)=>p.classList.toggle("on",k<=i));
+  $("progress").style.display=st==="done"?"none":"flex";
+  if(st==="review"){renderReview();$("confirm").checked=false;}
+  if(st==="pay") renderPM();
+  if(st==="done") renderDone();
+  update(); window.scrollTo(0,0);
+}
+$("next").addEventListener("click",()=>{
+  if(BUSY) return;
+  if(M==="bal"){ B.step==="bal-done"?showHome("home"):submitBal(); return; }
+  if(M==="pre"){ const st=PSTEPS[P.i]; if(st==="pre-done") showHome("home"); else if(st==="pre-pay") submitPre(); else goPre(P.i+1); return; }
+  const st=cur();
+  if(st==="done"){ showHome("home"); return; }
+  if(st==="pay"){ submitBook(); return; }
+  go(S.i+1);
+});
+$("back").addEventListener("click",()=>{
+  if(BUSY) return;
+  if(M==="bal"){ showHome(VIEW); return; }
+  if(M==="pre"){ P.i===0?showHome(VIEW):goPre(P.i-1); return; }
+  S.i===0?showHome(VIEW):go(S.i-1);
+});
+$("orderMore").addEventListener("click",()=>{
+  const keep={faqRead:S.faqRead,tncRead:S.tncRead};
+  S={...freshState(),...keep}; resetOpts();
+  $("qty").querySelectorAll("button").forEach(b=>b.classList.toggle("on",+b.dataset.n===S.qty));
+  renderChoices();
+  $("payUp").classList.remove("done"); $("payUp").querySelector("input").value="";
+  $("payUp").querySelector(".txt").innerHTML=`Upload your receipt<br><small class="hint">Screenshot or PDF</small>`;
+  go(steps().indexOf("tickets"));
+});
+
+/* ===== pre-booking flow ===== */
+const PSTEPS=["pre-info","pre-form","pre-pay","pre-done"];
+function startPre(id){
+  enterFlow(); M="pre"; const ev=EVENTS[id];
+  P={i:0,ev,qty:Math.min(2,ev.maxQty||2),pTier:"",pDay:"",region:"MY",ppm:"",up:false,res:null};
+  ["p1","p2","p3"].forEach(x=>$(x).checked=false); $("pNote").value="";
+  document.querySelectorAll('[data-name="pTier"] .opt,[data-name="pDay"] .opt').forEach(o=>{o.classList.remove("sel");o.querySelector("input").checked=false;});
+  $("pUp").classList.remove("done"); $("pUp").querySelector("input").value="";
+  $("pUp").querySelector(".txt").innerHTML=`Upload your receipt<br><small class="hint">Screenshot or PDF</small>`;
+  $("prePoster").hidden=!ev.poster; if(ev.poster){$("prePoster").src=ev.poster;$("prePoster").alt=ev.title+" poster";}
+  $("preHero").style.setProperty("--tix",ev.tint);
+  $("preHero").innerHTML=`<div class="main"><span class="tag">${esc(ev.saleLabel||"PRE-BOOKING")}</span><h1>${esc(ev.title)}</h1><p>${esc(ev.sub)}</p><div class="facts"><div>Expected<b>${esc(ev.date)}</b>${esc(ev.city)}</div><div>Deposit<b>RM${ev.dep.MY} · S$${ev.dep.SG}</b>per ticket</div></div></div><div class="side"><span>PRE ♡ ${esc(ev.id)}</span></div>`;
+  $("pPrefill").textContent=$("fn").value?`✓ Using your saved details: ${$("fn").value} ${$("ln").value} · ${$("ph").value}`:"We'll use your Telegram account. Add your full details when booking opens.";
+  [...$("pQty").children].forEach(b=>b.classList.toggle("on",+b.dataset.n===P.qty));
+  [...$("pRegion").children].forEach(b=>b.classList.toggle("on",b.dataset.r==="MY"));
+  $("progress").innerHTML="<span></span><span></span><span></span>";
+  goPre(0);
+}
+function goPre(i){
+  P.i=i; const st=PSTEPS[i]; hideAll();
+  document.querySelector(`.step[data-step="${st}"]`).hidden=false;
+  $("progress").style.display=st==="pre-done"?"none":"flex";
+  [...$("progress").children].forEach((p,k)=>p.classList.toggle("on",k<=i));
+  $("back").hidden=st==="pre-done";
+  if(st==="pre-pay") renderPrePay();
+  if(st==="pre-done") renderPreDone();
+  updatePre(); window.scrollTo(0,0);
+}
+function renderPrePay(){
+  const c=P.region==="MY"?"RM":"S$", per=P.ev.dep[P.region];
+  $("pAmt").textContent=money(per*P.qty,c); $("pPer").textContent=`${c}${per} × ${P.qty}`;
+  const list=PAY[P.region].methods; if(!list.some(x=>x[0]===P.ppm)) P.ppm="";
+  $("pPm").innerHTML=list.map(([v,t,s])=>`<label class="opt ${P.ppm===v?"sel":""}"><input type="radio" name="ppm" value="${v}" ${P.ppm===v?"checked":""}><span>${t}${s?`<small>${s}</small>`:""}</span></label>`).join("");
+  $("pPm").querySelectorAll("input").forEach(inp=>inp.addEventListener("change",()=>{P.ppm=inp.value;renderPrePay();updatePre();}));
+  renderAcct($("pAcct"),P.region,P.ppm,P.ev.id);
+}
+function renderPreDone(){
+  const r=P.res, note=$("pNote").value.trim();
+  $("pDoneTxt").textContent=`Pre-booking ${r.id}`;
+  $("pCopy").innerHTML=`<span class="from">JTS bot</span>📋 COPY OF YOUR PRE-BOOKING ${esc(r.id)}\n\nEvent: ${esc(P.ev.title)} (${esc(P.ev.city)})\nTickets: ${P.qty}\nAiming for: ${esc(P.pTier)}\nShow date: ${esc(P.pDay)}${note?"\nNotes: "+esc(note):""}\n\nDeposit paid: ${money(r.dep,r.cur)} (${esc(P.ppm)})\nDeducted later when booking opens.\nNo refund if you cancel, unless you find a replacement.`;
+}
+async function submitPre(){
+  busy(true,"Sending…");
+  try{
+    const payload={eventId:P.ev.id,qty:P.qty,tier:P.pTier,day:P.pDay,note:$("pNote").value.trim(),region:P.region,pm:P.ppm,
+      fn:$("fn").value.trim(),ln:$("ln").value.trim(),ph:$("ph").value.trim(),em:$("em").value.trim(),payFile:await fileData($("pUp").querySelector("input"))};
+    const r=await call("submitPrebook",INIT,payload);
+    P.res=r; ORDERS.unshift({id:r.id,ev:`Pre-book · ${P.ev.title}`,st:["Checking deposit","s-soon"],note:""});
+    busy(false); goPre(P.i+1);
+  }catch(err){ busy(false); updatePre(); toast(err.message||"Something went wrong. Please try again."); }
+}
+function preBlocker(){
+  switch(PSTEPS[P.i]){
+    case "pre-info": return ($("p1").checked&&$("p2").checked&&$("p3").checked)?"":"Tick all three deposit rules";
+    case "pre-form": return !P.pTier?"Tell us what you're aiming for":!P.pDay?"Pick a show date option":"";
+    case "pre-pay": return !P.ppm?"Choose how you'll pay":!P.up?"Upload your payment proof":"";
+  }
+  return "";
+}
+function updatePre(){
+  const st=PSTEPS[P.i], why=preBlocker();
+  $("why").textContent=st==="pre-done"?"":why; $("next").disabled=!!why;
+  $("next").textContent={"pre-info":"Pre-book a slot","pre-form":"Continue","pre-pay":"Submit pre-booking","pre-done":"Back to home"}[st];
+}
+document.querySelectorAll('[data-name="pTier"],[data-name="pDay"]').forEach(g=>g.querySelectorAll("input").forEach(inp=>inp.addEventListener("change",()=>{
+  P[g.dataset.name]=inp.value; g.querySelectorAll(".opt").forEach(o=>o.classList.toggle("sel",o.querySelector("input").checked)); updatePre();
+})));
+$("pQty").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;P.qty=+b.dataset.n;[...$("pQty").children].forEach(x=>x.classList.toggle("on",x===b));});
+$("pRegion").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;P.region=b.dataset.r;[...$("pRegion").children].forEach(x=>x.classList.toggle("on",x===b));renderPrePay();updatePre();});
+$("pUp").querySelector("input").addEventListener("change",e=>{const f=e.target.files[0];if(!f)return;P.up=f.name;$("pUp").classList.add("done");$("pUp").querySelector(".txt").innerHTML=`✓ ${esc(f.name.length>28?f.name.slice(0,25)+"…":f.name)}<br><small>Tap to replace</small>`;updatePre();});
+
+/* ===== balance payment flow ===== */
+let B={};
+function startBal(id){
+  const o=ORDERS.find(x=>x.id===id); if(!o||!o.pay) return;
+  enterFlow(); M="bal"; B={o,region:o.region==="SG"?"SG":"MY",pm:"",up:false,step:"bal-pay"};
+  hideAll(); document.querySelector('.step[data-step="bal-pay"]').hidden=false;
+  $("progress").style.display="none"; $("back").hidden=false;
+  $("balLede").textContent=`${o.id} · ${o.ev}`;
+  $("balAmt").textContent=money(o.pay.amount,o.pay.cur); $("balDue").textContent=o.pay.due||"1 day before ticketing";
+  $("balBreak").textContent=o.pay.breakdown;
+  $("balUp").classList.remove("done"); $("balUp").querySelector("input").value="";
+  $("balUp").querySelector(".txt").innerHTML=`Upload your receipt<br><small class="hint">Screenshot or PDF</small>`;
+  renderBalPm(); updateBal(); window.scrollTo(0,0);
+}
+function renderBalPm(){
+  const list=PAY[B.region].methods; if(!list.some(x=>x[0]===B.pm)) B.pm="";
+  $("balPm").innerHTML=list.map(([v,t,s])=>`<label class="opt ${B.pm===v?"sel":""}"><input type="radio" name="bpm" value="${v}" ${B.pm===v?"checked":""}><span>${t}${s?`<small>${s}</small>`:""}</span></label>`).join("");
+  $("balPm").querySelectorAll("input").forEach(inp=>inp.addEventListener("change",()=>{B.pm=inp.value;renderBalPm();updateBal();}));
+  renderAcct($("balAcct"),B.region,B.pm,B.o.id);
+}
+$("balUp").querySelector("input").addEventListener("change",e=>{const f=e.target.files[0];if(!f)return;B.up=f.name;$("balUp").classList.add("done");$("balUp").querySelector(".txt").innerHTML=`✓ ${esc(f.name.length>28?f.name.slice(0,25)+"…":f.name)}<br><small>Tap to replace</small>`;updateBal();});
+function updateBal(){
+  const why=B.step==="bal-done"?"":(!B.pm?"Choose how you paid":!B.up?"Upload your receipt":"");
+  $("why").textContent=why; $("next").disabled=!!why;
+  $("next").textContent=B.step==="bal-done"?"Back to home":"Send receipt";
+}
+async function submitBal(){
+  busy(true,"Sending…");
+  try{
+    await call("submitBalance",INIT,{orderId:B.o.id,pm:B.pm,file:await fileData($("balUp").querySelector("input"))});
+    B.o.pay=null; B.o.st=["Balance paid (checking)","s-soon"];
+    busy(false); B.step="bal-done";
+    hideAll(); document.querySelector('.step[data-step="bal-done"]').hidden=false; $("back").hidden=true;
+    $("balDoneTxt").textContent=B.o.id; updateBal(); window.scrollTo(0,0);
+  }catch(err){ busy(false); updateBal(); toast(err.message||"Something went wrong. Please try again."); }
+}
+
+/* ===== Telegram native touches: back button, vibration, close warning, colours ===== */
+(function(){
+  const tg=window.Telegram&&Telegram.WebApp; if(!tg||!tg.initData) return;
+  document.body.classList.add("tg");
+  try{ tg.ready(); tg.expand(); }catch(e){}
+  try{ tg.setHeaderColor("#c6d0f7"); tg.setBackgroundColor("#e6d7f5"); }catch(e){}
+  try{ tg.disableVerticalSwipes&&tg.disableVerticalSwipes(); }catch(e){}
+  const hap=(k,t)=>{ try{ k==="impact"?tg.HapticFeedback.impactOccurred(t):tg.HapticFeedback.notificationOccurred(t); }catch(e){} };
+  let lastDone="";
+  function sync(){
+    const inFlow=M!=="home";
+    try{ (inFlow||VIEW!=="home")?tg.BackButton.show():tg.BackButton.hide(); }catch(e){}
+    const step=M==="book"&&S?cur():M==="pre"?PSTEPS[P.i]:M==="bal"?B.step:"";
+    const done=/done$/.test(step||"");
+    try{ (inFlow&&!done)?tg.enableClosingConfirmation():tg.disableClosingConfirmation(); }catch(e){}
+    if(done&&lastDone!==step+(S&&S.orderId||"")+(P&&P.res&&P.res.id||"")){ lastDone=step+(S&&S.orderId||"")+(P&&P.res&&P.res.id||""); hap("note","success"); }
+  }
+  try{ tg.BackButton.onClick(()=>{ hap("impact","light"); if(M==="home") showHome("home"); else $("back").click(); }); }catch(e){}
+  ["showHome","go","goPre","startBal","enterFlow"].forEach(name=>{
+    const orig=window[name]; if(typeof orig!=="function") return;
+    window[name]=function(){ const r=orig.apply(this,arguments); sync(); return r; };
+  });
+  const _toast=window.toast; window.toast=function(m){ hap("note","warning"); return _toast(m); };
+  document.addEventListener("click",e=>{
+    if(e.target.closest("#next,.btn2,.tile,.tabbar button,.opt,.seg button,.bell")) hap("impact","light");
+    const a=e.target.closest("a[href]"); if(!a) return;
+    const href=a.getAttribute("href");
+    if(/^https:\/\/t\.me\//.test(href)){ e.preventDefault(); tg.openTelegramLink(href); }
+    else if(/^https?:/.test(href)){ e.preventDefault(); tg.openLink(href); }
+  },true);
+  sync();
+})();
+
+boot();
+</script>
+</body>
+</html>
