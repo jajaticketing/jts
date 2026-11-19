@@ -323,7 +323,9 @@ body.tg .back{display:none!important}
         <label class="field">Tickets<select id="rqQty"><option>1</option><option selected>2</option><option>3</option><option>4</option></select></label>
       </div>
       <label class="field">Date, if announced <span class="hint">Optional</span><input type="text" id="rqDate" placeholder="e.g. March 2027"></label>
-      <label class="field">Anything else? <span class="hint">Optional. Preferred category, budget, link</span><input type="text" id="rqNote"></label>
+      <label class="field">Ticketing date, if announced <span class="hint">Optional</span><input type="text" id="rqTix" placeholder="e.g. 12 Dec, 12pm (presale)"></label>
+      <label class="field">Ticketing / info link <span class="hint">Required. Official announcement, ticket page or poster post</span><input type="url" id="rqLink" inputmode="url" placeholder="https://…" required></label>
+      <label class="field">Anything else? <span class="hint">Optional. Preferred category, budget, presale you have, etc.</span><input type="text" id="rqNote"></label>
       <button type="button" class="btn2" id="rqSend">Send request</button>
     </div>
     <div class="card">
@@ -959,10 +961,11 @@ document.addEventListener("click",e=>{
 $("faqSearch").addEventListener("input",renderFaq);
 $("place").addEventListener("change",ev=>{PLACE=ev.target.value;renderEvents();});
 $("rqSend").addEventListener("click",()=>{
-  const r={artist:$("rqArtist").value.trim(),city:$("rqCity").value,qty:$("rqQty").value,date:$("rqDate").value.trim(),note:$("rqNote").value.trim(),fn:$("fn").value,ln:$("ln").value};
+  const r={artist:$("rqArtist").value.trim(),city:$("rqCity").value,qty:$("rqQty").value,date:$("rqDate").value.trim(),tixDate:$("rqTix").value.trim(),link:$("rqLink").value.trim(),note:$("rqNote").value.trim(),fn:$("fn").value,ln:$("ln").value};
   if(!r.artist){toast("Tell us the artist or event first");$("rqArtist").focus();return;}
+  if(!r.link){toast("Please add the ticketing or info link");$("rqLink").focus();return;}
   $("rqSend").disabled=true; $("rqSend").textContent="Sending…";
-  call("submitRequest",INIT,r).then(()=>{REQS.unshift(r);["rqArtist","rqDate","rqNote"].forEach(id=>$(id).value="");renderFollows();toast("Request sent! Both admins have been told.");})
+  call("submitRequest",INIT,r).then(()=>{REQS.unshift(r);["rqArtist","rqDate","rqTix","rqLink","rqNote"].forEach(id=>$(id).value="");renderFollows();toast("Request sent! Both admins have been told.");})
     .catch(err=>toast(err.message)).finally(()=>{$("rqSend").disabled=false;$("rqSend").textContent="Send request";});
 });
 
