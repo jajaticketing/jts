@@ -190,6 +190,7 @@ input:focus-visible,select:focus-visible,button:focus-visible,.opt:focus-within,
 .filters{display:flex;gap:7px;overflow-x:auto;padding:2px 2px 12px;margin:0 -2px}
 .filters button{flex:none;border:1.5px solid var(--ink);background:#fff;border-radius:999px;padding:6px 12px;font:800 13px var(--body);cursor:pointer;color:var(--ink)}
 .filters button.on{background:var(--ink);color:#fff}
+.placesel{width:100%;margin:0 0 12px;border:1.5px solid var(--ink);border-radius:12px;padding:9px 12px;font:800 14px var(--body);background:#fff;color:var(--ink)}
 .evcard{display:grid;grid-template-columns:78px 1fr;gap:12px;background:var(--paper);border:2px solid var(--ink);border-radius:18px;padding:12px;margin-bottom:14px;box-shadow:var(--shadow)}
 .poster{border-radius:12px;border:1.5px solid var(--ink);aspect-ratio:3/4;display:grid;place-items:center;font:700 20px var(--display);color:var(--ink);text-align:center;line-height:1;padding:4px;position:relative;overflow:hidden}
 .poster::after{content:"✦";position:absolute;right:5px;top:3px;font-size:12px}
@@ -303,6 +304,7 @@ body.tg .back{display:none!important}
       <button type="button" data-f="pre">Pre-book</button>
       <button type="button" data-goview="sale">For sale ›</button>
     </div>
+    <select id="place" class="placesel" aria-label="Filter by city or country"></select>
     <div id="evList"></div>
   </section>
 
@@ -731,7 +733,7 @@ const STATUS={available:["Available","s-open"],limited:["Limited","s-wait"],clos
 
 /* ===== state ===== */
 let AGREED=false, TERMS_VER="1", DRAFT=null, ORDERS_LOADING=false, FORSALE=[], RM_SGD=0, PAYLINK="", INIT="", USER=null, PAY={}, EVENTS={}, LIST=[], ORDERS=[], ADMINS=[], follows=new Set(), REQS=[];
-let E=null, S=null, CUR="", M="home", VIEW="home", FILTER="all", BUSY=false;
+let E=null, S=null, CUR="", M="home", VIEW="home", FILTER="all", PLACE="", BUSY=false;
 let P={i:0};
 const $ = id => document.getElementById(id);
 const fmt = n => Number(n).toLocaleString("en-MY",{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -796,7 +798,7 @@ function onBoot(b){
     const rows=groups[g], f=rows.find(r=>r.poster)||rows[0];
     const status=rows.map(r=>r.status).sort((a,c)=>(RANK[c]||0)-(RANK[a]||0))[0];
     const kind=status==="closed"?"wait":status==="pre"?"pre":status==="soon"?"soon":"book";
-    return {id:g,status,kind,fandom:rows[0].fandom,title:rows[0].title,city:rows[0].city,date:rows[0].date,
+    return {id:g,status,kind,fandom:rows[0].fandom,title:rows[0].title,city:rows[0].city,country:rows[0].country,date:rows[0].date,
       bg:`linear-gradient(160deg,${rows[0].tint},#c9b8f8)`,short:rows[0].short,poster:f.poster,
       sales:rows.map(r=>({id:r.id,name:r.saleName||r.saleLabel,status:r.status,type:r.type})),
       sale:rows.map(r=>r.saleName||r.saleLabel).filter(Boolean).join(" · ")};
@@ -838,7 +840,15 @@ function evCard(e){
 }
 function renderEvents(){
   [...$("filters").children].forEach(b=>b.classList.toggle("on",b.dataset.f===FILTER));
-  const L=LIST.filter(e=>FILTER==="all"||e.fandom===FILTER||(FILTER==="open"?isOpen(e):e.status===FILTER));
+  const C={},sel=$("place");
+  LIST.forEach(e=>{const k=e.country||"Other";(C[k]=C[k]||new Set());if(e.city)C[k].add(e.city);});
+  const opts=[`<option value="">📍 All places</option>`];
+  Object.keys(C).sort().forEach(k=>{opts.push(`<option value="c:${esc(k)}">${esc(k==="Other"?"Other places":"All of "+k)}</option>`);
+    [...C[k]].sort().forEach(ci=>opts.push(`<option value="t:${esc(ci)}">&nbsp;&nbsp;&nbsp;${esc(ci)}</option>`));});
+  sel.innerHTML=opts.join(""); sel.value=PLACE; if(sel.value!==PLACE){PLACE="";sel.value="";}
+  sel.hidden=Object.keys(C).length<2&&LIST.filter(e=>e.city).length<2;
+  const inPlace=e=>!PLACE||(PLACE[0]==="c"?(e.country||"Other")===PLACE.slice(2):e.city===PLACE.slice(2));
+  const L=LIST.filter(e=>(FILTER==="all"||e.fandom===FILTER||(FILTER==="open"?isOpen(e):e.status===FILTER))&&inPlace(e));
   $("evList").innerHTML=L.map(evCard).join("")||`<p class="hint">Nothing here right now. Tap the bell on any event to be notified.</p>`;
 }
 function renderHome(){
@@ -907,6 +917,7 @@ document.addEventListener("click",e=>{
   else if(t.closest("#filters")){ FILTER=t.dataset.f; renderEvents(); }
 });
 $("faqSearch").addEventListener("input",renderFaq);
+$("place").addEventListener("change",ev=>{PLACE=ev.target.value;renderEvents();});
 $("rqSend").addEventListener("click",()=>{
   const r={artist:$("rqArtist").value.trim(),city:$("rqCity").value,qty:$("rqQty").value,date:$("rqDate").value.trim(),note:$("rqNote").value.trim(),fn:$("fn").value,ln:$("ln").value};
   if(!r.artist){toast("Tell us the artist or event first");$("rqArtist").focus();return;}
