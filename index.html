@@ -117,6 +117,9 @@ input:focus-visible,select:focus-visible,button:focus-visible,.opt:focus-within,
 .seg button.on{background:var(--ink);color:#fff}
 .upload{display:flex;align-items:center;gap:10px;border:2px dashed var(--lilac-deep);border-radius:14px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;position:relative;background:#fff}
 .upload input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.dmalt{margin-top:8px;font-size:13px;color:var(--muted)}
+.dmalt a{color:#5a45b8;font-weight:900}
+.upload.dmon{opacity:.5}
 .upload .ic{width:36px;height:36px;border-radius:10px;background:var(--lilac);border:1.5px solid var(--ink);display:grid;place-items:center;font-weight:900;flex:none}
 .upload.done{border-style:solid;border-color:var(--mint);background:var(--mint-soft);color:var(--mint)}
 .big{font:700 34px var(--display);font-variant-numeric:tabular-nums;line-height:1}
@@ -755,9 +758,25 @@ function call(fn,...args){
 }
 /* Phone photos are 3–5 MB. Shrink images to max 1600px as JPEG (~200–400 KB, still sharp enough to read)
    before sending. PDFs are sent as they are. */
+/* Some Android phones (Telegram on Samsung etc.) lose access to a picked file after a while,
+   so we read it the moment it's picked and keep the result. */
 function fileData(input){
   const f=input.files&&input.files[0]; if(!f) return Promise.resolve(null);
-  const read=blob=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(",")[1]);r.onerror=()=>rej(new Error("Couldn't read that file"));r.readAsDataURL(blob);});
+  if(input._job&&input._file===f) return input._job;
+  input._file=f; input._job=readFile(f); return input._job;
+}
+document.addEventListener("change",e=>{
+  const inp=e.target; if(!inp||inp.type!=="file") return;
+  const f=inp.files&&inp.files[0]; if(!f){ inp._job=null; return; }
+  fileData(inp).catch(err=>{ inp._job=null; inp._file=null; toast(err.message); });
+},true);
+const b64=buf=>{ let s="",a=new Uint8Array(buf); for(let i=0;i<a.length;i+=32768) s+=String.fromCharCode.apply(null,a.subarray(i,i+32768)); return btoa(s); };
+function readFile(f){
+  const BAD="Couldn't open that file. Please choose it again, or upload a screenshot from your Gallery instead.";
+  const read=blob=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(",")[1]);r.onerror=()=>rej(r.error);r.readAsDataURL(blob);})
+    .catch(()=>blob.arrayBuffer?blob.arrayBuffer().then(b64):Promise.reject())
+    .catch(()=>new Response(blob).arrayBuffer().then(b64))
+    .catch(()=>{ throw new Error(BAD); });
   if(!/^image\//.test(f.type)||/gif|svg/.test(f.type)){
     if(f.size>8e6) return Promise.reject(new Error("That file is too big (max 8 MB). Try a screenshot instead."));
     return read(f).then(data=>({name:f.name,mime:f.type||"application/octet-stream",data}));
@@ -779,6 +798,29 @@ function fileData(input){
   });
 }
 function busy(on,label){BUSY=on;$("next").disabled=on||!!$("why").textContent;if(on)$("next").textContent=label||"Sending…";}
+
+/* ===== "Can't upload? DM Admin Intern instead" under every upload box ===== */
+function dmAdmin(){ const a=(ADMINS||[]).find(x=>/intern/i.test(x.name||""))||(ADMINS||[])[0]||{}; return a.username||"hamscat"; }
+const DMBOX={memUp:[()=>S,"memUp"],payUp:[()=>S,"payUp"],pUp:[()=>P,"up"],balUp:[()=>B,"up"]};
+function dmSet(id,on){
+  const [st,key]=DMBOX[id], o=st(); if(!o) return;
+  const box=$(id+"Dm"); if(box) box.querySelector("input").checked=on;
+  if(on){ const inp=$(id).querySelector("input"); inp.value=""; inp._job=null; inp._file=null; $(id).classList.remove("done");
+    $(id).querySelector(".txt").innerHTML=`Upload here<br><small class="hint">or send it to Admin Intern</small>`; o[key]="DM"; }
+  else if(o[key]==="DM") o[key]=S===o?false:"";
+  $(id).classList.toggle("dmon",on&&o[key]==="DM");
+}
+Object.keys(DMBOX).forEach(id=>{
+  const up=$(id); if(!up) return;
+  const l=document.createElement("label"); l.className="check dmalt"; l.id=id+"Dm";
+  l.innerHTML=`<input type="checkbox"><span>Can't upload? Tick this and send it to <b>Admin Intern</b> on Telegram instead. <a href="#" data-dmlink>Open chat</a></span>`;
+  up.insertAdjacentElement("afterend",l);
+  l.querySelector("input").addEventListener("change",e=>{ dmSet(id,e.target.checked); update(); });
+  up.querySelector("input").addEventListener("change",e=>{ if(e.target.files.length) dmSet(id,false); });
+});
+document.addEventListener("click",e=>{ const a=e.target.closest("[data-dmlink]"); if(!a) return; e.preventDefault();
+  const u="https://t.me/"+dmAdmin(); const tg=window.Telegram&&Telegram.WebApp;
+  if(tg&&tg.initData){ try{ tg.openTelegramLink(u); return; }catch(_){} } window.open(u,"_blank"); });
 
 /* ===== boot ===== */
 function boot(){
@@ -1006,7 +1048,7 @@ $("resumeYes").addEventListener("click",()=>{
 function load(key){
   CUR=key; E=EVENTS[key]; S=freshState();
   resetOpts(); ["a1","a2","a3","a4","confirm"].forEach(id=>$(id).checked=false);
-  ["memUp","payUp"].forEach(id=>{$(id).classList.remove("done");$(id).querySelector("input").value="";});
+  ["memUp","payUp"].forEach(id=>{$(id).classList.remove("done");$(id).querySelector("input").value="";dmSet(id,false);});
   $("memUp").querySelector(".txt").innerHTML=`Screenshot of your presale application<br><small class="hint">Required for this presale</small>`;
   $("payUp").querySelector(".txt").innerHTML=`Upload your receipt<br><small class="hint">Screenshot or PDF</small>`;
   $("region").querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.r==="MY"));
@@ -1192,7 +1234,8 @@ async function submitBook(){
     const payload={eventId:E.id,fn:$("fn").value.trim(),ln:$("ln").value.trim(),ph:$("ph").value.trim(),em:$("em").value.trim(),ic:$("ic").value.trim(),
       bank:$("bank").value,acc:$("acc").value.trim(),accn:$("accn").value.trim(),pe:E.needsAccount?$("pe").value.trim():"",pp:E.needsAccount?$("pp").value:"",
       mem:E.needsCode?$("mem").value.trim():"",qty:S.qty,choices:S.choices,region:S.region,pm:S.pm,...t,copy:copyText(),
-      memFile:E.needsShot?await fileData($("memUp").querySelector("input")):null,payFile:await fileData($("payUp").querySelector("input"))};
+      memFile:E.needsShot?await fileData($("memUp").querySelector("input")):null,payFile:await fileData($("payUp").querySelector("input")),
+      memDm:S.memUp==="DM",payDm:S.payUp==="DM",dmAdmin:dmAdmin()};
     const r=await call("submitBooking",INIT,payload);
     S.orderId=r.id; S.paid=r; DRAFT=null; AGREED=true;
     ORDERS.unshift({id:r.id,ev:`${E.title} · ${S.qty} ticket(s)`,st:["Checking payment","s-soon"],note:`Booking fee ${money(r.bf,r.cur)}`});
@@ -1275,7 +1318,7 @@ $("orderMore").addEventListener("click",()=>{
   S={...freshState(),...keep}; resetOpts();
   $("qty").querySelectorAll("button").forEach(b=>b.classList.toggle("on",+b.dataset.n===S.qty));
   renderChoices();
-  $("payUp").classList.remove("done"); $("payUp").querySelector("input").value="";
+  $("payUp").classList.remove("done"); $("payUp").querySelector("input").value=""; dmSet("payUp",false);
   $("payUp").querySelector(".txt").innerHTML=`Upload your receipt<br><small class="hint">Screenshot or PDF</small>`;
   go(steps().indexOf("tickets"));
 });
@@ -1287,7 +1330,7 @@ function startPre(id){
   P={i:0,ev,qty:Math.min(2,ev.maxQty||2),pTier:"",pDay:"",region:"MY",ppm:"",up:false,res:null};
   ["p1","p2","p3"].forEach(x=>$(x).checked=false); $("pNote").value="";
   document.querySelectorAll('[data-name="pTier"] .opt,[data-name="pDay"] .opt').forEach(o=>{o.classList.remove("sel");o.querySelector("input").checked=false;});
-  $("pUp").classList.remove("done"); $("pUp").querySelector("input").value="";
+  $("pUp").classList.remove("done"); $("pUp").querySelector("input").value=""; dmSet("pUp",false);
   $("pUp").querySelector(".txt").innerHTML=`Upload your receipt<br><small class="hint">Screenshot or PDF</small>`;
   $("prePoster").hidden=!ev.poster; if(ev.poster){$("prePoster").src=ev.poster;$("prePoster").alt=ev.title+" poster";}
   $("preHero").style.setProperty("--tix",ev.tint);
@@ -1325,7 +1368,7 @@ async function submitPre(){
   busy(true,"Sending…");
   try{
     const payload={eventId:P.ev.id,qty:P.qty,tier:P.pTier,day:P.pDay,note:$("pNote").value.trim(),region:P.region,pm:P.ppm,
-      fn:$("fn").value.trim(),ln:$("ln").value.trim(),ph:$("ph").value.trim(),em:$("em").value.trim(),payFile:await fileData($("pUp").querySelector("input"))};
+      fn:$("fn").value.trim(),ln:$("ln").value.trim(),ph:$("ph").value.trim(),em:$("em").value.trim(),payFile:await fileData($("pUp").querySelector("input")),payDm:P.up==="DM",dmAdmin:dmAdmin()};
     const r=await call("submitPrebook",INIT,payload);
     P.res=r; ORDERS.unshift({id:r.id,ev:`Pre-book · ${P.ev.title}`,st:["Checking deposit","s-soon"],note:""});
     busy(false); goPre(P.i+1);
@@ -1361,7 +1404,7 @@ function startBal(id){
   $("balLede").textContent=`${o.id} · ${o.ev}`;
   $("balAmt").textContent=money(o.pay.amount,o.pay.cur); $("balDue").textContent=o.pay.due||"1 day before ticketing";
   $("balBreak").textContent=o.pay.breakdown;
-  $("balUp").classList.remove("done"); $("balUp").querySelector("input").value="";
+  $("balUp").classList.remove("done"); $("balUp").querySelector("input").value=""; dmSet("balUp",false);
   $("balUp").querySelector(".txt").innerHTML=`Upload your receipt<br><small class="hint">Screenshot or PDF</small>`;
   renderBalPm(); updateBal(); window.scrollTo(0,0);
 }
@@ -1380,7 +1423,7 @@ function updateBal(){
 async function submitBal(){
   busy(true,"Sending…");
   try{
-    await call("submitBalance",INIT,{orderId:B.o.id,pm:B.pm,file:await fileData($("balUp").querySelector("input"))});
+    await call("submitBalance",INIT,{orderId:B.o.id,pm:B.pm,file:await fileData($("balUp").querySelector("input")),dm:B.up==="DM",dmAdmin:dmAdmin()});
     B.o.pay=null; B.o.st=["Balance paid (checking)","s-soon"];
     busy(false); B.step="bal-done";
     hideAll(); document.querySelector('.step[data-step="bal-done"]').hidden=false; $("back").hidden=true;
