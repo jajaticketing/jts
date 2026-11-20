@@ -117,6 +117,8 @@ input:focus-visible,select:focus-visible,button:focus-visible,.opt:focus-within,
 .seg button.on{background:var(--ink);color:#fff}
 .upload{display:flex;align-items:center;gap:10px;border:2px dashed var(--lilac-deep);border-radius:14px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;position:relative;background:#fff}
 .upload input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.tourlist{display:flex;flex-wrap:wrap;gap:5px;margin:4px 0 2px}
+.tourlist span{font-size:12px;font-weight:800;background:var(--lilac-soft,#ece5ff);border:1.5px solid var(--ink);border-radius:999px;padding:2px 9px}
 .dmalt{margin-top:8px;font-size:13px;color:var(--muted)}
 .dmalt a{color:#5a45b8;font-weight:900}
 .upload.dmon{opacity:.5}
@@ -414,6 +416,11 @@ body.tg .back{display:none!important}
     <h2>Your pre-booking</h2>
     <p class="lede">Short version. We'll ask for the full details once the event is announced.</p>
     <div class="prefill" id="pPrefill"></div>
+    <div class="card" id="pCityCard" hidden>
+      <h3>Which city?</h3>
+      <p class="hint">Pick one city per pre-booking. Want another city too? Submit a separate pre-booking for it after this one.</p>
+      <div class="opts" data-name="pCity"></div>
+    </div>
     <div class="card">
       <h3>How many?</h3>
       <div class="seg" id="pQty"><button type="button" data-n="1">1 ticket</button><button type="button" data-n="2" class="on">2 tickets</button></div>
@@ -590,6 +597,11 @@ body.tg .back{display:none!important}
   <section class="step" data-step="tickets" hidden>
     <h2>Your tickets</h2>
     <p class="lede">We follow exactly what you choose here. Don't tick anything you're not okay with.</p>
+    <div class="card" id="dateCard" hidden>
+      <h3>Which date?</h3>
+      <p class="hint">This event has more than one date. Pick one date per booking. Want another date too? Submit a separate booking for it after this one.</p>
+      <div class="opts" id="dateOpts"></div>
+    </div>
     <div class="card">
       <h3>How many?</h3>
       <div class="seg" id="qty"></div>
@@ -918,7 +930,7 @@ function evCard(e){
     soon:`<button type="button" class="btn2 sm ghost" data-follow="${e.id}">${follows.has(e.id)?"Following ✓":"Notify me"}</button>`}[e.kind]||"";
   return `<div class="evcard">${e.poster?`<div class="poster has-img" style="background-image:url('${esc(e.poster)}')" role="img" aria-label="${esc(e.title)} poster"></div>`:`<div class="poster" style="background:${esc(e.bg)}">${esc(e.short)}</div>`}<div class="evbody">
     <div class="evtop"><span class="status ${cls}">${lab}</span></div>
-    <h4>${esc(e.title)}</h4><div class="evmeta">${esc(e.city)} · ${esc(e.date)}${e.sales.length===1?`<br>${esc(e.sale)}`:""}</div>
+    <h4>${esc(e.title)}</h4>${(e.tourList||[]).length?`<div class="tourlist">${e.tourList.map(t=>`<span>${esc(t.label)}</span>`).join("")}</div>`:`<div class="evmeta">${esc(e.city)} · ${esc(e.date)}${e.sales.length===1?`<br>${esc(e.sale)}`:""}</div>`}
     <div class="evslots">${slotTxt(e)}</div>
     ${e.sales.length>1?`<div class="sales">${e.sales.map(s=>`<div class="salerow"><span>${esc(s.name)}</span>${isOpen(s)?`<button type="button" class="btn2 sm" data-book="${s.id}">Book</button>`:`<span class="status ${(STATUS[s.status]||["","s-full"])[1]}">${(STATUS[s.status]||["Closed"])[0]}</span>`}</div>`).join("")}</div>`:""}
     <div class="evact">${act}${e.kind!=="soon"?`<button type="button" class="bell ${follows.has(e.id)?"on":""}" data-follow="${e.id}" aria-label="Notify me">${ICON.bell}</button>`:""}</div></div></div>`;
@@ -926,13 +938,14 @@ function evCard(e){
 function renderEvents(){
   [...$("filters").children].forEach(b=>b.classList.toggle("on",b.dataset.f===FILTER));
   const C={},sel=$("place");
-  LIST.forEach(e=>{const k=e.country||"Other";(C[k]=C[k]||new Set());if(e.city)C[k].add(e.city);});
+  const placesOf=e=>(e.tourList||[]).length?e.tourList.map(t=>({city:t.city,country:t.country||"Other"})):[{city:e.city,country:e.country||"Other"}];
+  LIST.forEach(e=>placesOf(e).forEach(x=>{const k=x.country||"Other";(C[k]=C[k]||new Set());if(x.city)C[k].add(x.city);}));
   const opts=[`<option value="">📍 All places</option>`];
   Object.keys(C).sort().forEach(k=>{opts.push(`<option value="c:${esc(k)}">${esc(k==="Other"?"Other places":"All of "+k)}</option>`);
     [...C[k]].sort().forEach(ci=>opts.push(`<option value="t:${esc(ci)}">&nbsp;&nbsp;&nbsp;${esc(ci)}</option>`));});
   sel.innerHTML=opts.join(""); sel.value=PLACE; if(sel.value!==PLACE){PLACE="";sel.value="";}
   sel.hidden=!LIST.length;
-  const inPlace=e=>!PLACE||(PLACE[0]==="c"?(e.country||"Other")===PLACE.slice(2):e.city===PLACE.slice(2));
+  const inPlace=e=>!PLACE||placesOf(e).some(x=>PLACE[0]==="c"?(x.country||"Other")===PLACE.slice(2):x.city===PLACE.slice(2));
   const L=LIST.filter(e=>(FILTER==="all"||e.fandom===FILTER||(FILTER==="open"?isOpen(e):e.status===FILTER))&&inPlace(e));
   $("evList").innerHTML=L.map(evCard).join("")||`<p class="hint">Nothing here right now. Tap the bell on any event to be notified.</p>`;
 }
@@ -1013,7 +1026,7 @@ $("rqSend").addEventListener("click",()=>{
 });
 
 /* ===== booking flow ===== */
-function freshState(){return {i:0,qty:Math.min(2,E.maxQty),choices:[{c:"",s:""},{c:"",s:""},{c:"",s:""}],seat:"",flex:"",wait:"",region:"MY",pm:"",memUp:false,payUp:false,faqRead:false,tncRead:false,orderId:"",paid:null};}
+function freshState(){return {i:0,showDate:"",qty:Math.min(2,E.maxQty),choices:[{c:"",s:""},{c:"",s:""},{c:"",s:""}],seat:"",flex:"",wait:"",region:"MY",pm:"",memUp:false,payUp:false,faqRead:false,tncRead:false,orderId:"",paid:null};}
 function steps(){return ["event","read",...(E.needsMembership?["member"]:[]),"details","tickets","review","pay","done"];}
 const cur=()=>steps()[S.i];
 function startBook(key){enterFlow();M="book";load(key);$("resumeBox").hidden=!(DRAFT&&DRAFT.eventId===key);}
@@ -1022,7 +1035,7 @@ function startBook(key){enterFlow();M="book";load(key);$("resumeBox").hidden=!(D
 const DRAFT_FIELDS=["fn","ln","ph","em","ic","bank","acc","accn","pe","mem"];
 function draftNow(){
   if(M!=="book"||!S||!E||cur()==="done"||S.i===0) return null;
-  const d={eventId:E.id,step:cur(),qty:S.qty,choices:S.choices,seat:S.seat,wait:S.wait,flex:S.flex,region:S.region,
+  const d={eventId:E.id,step:cur(),qty:S.qty,showDate:S.showDate,choices:S.choices,seat:S.seat,wait:S.wait,flex:S.flex,region:S.region,
     faqRead:S.faqRead,tncRead:S.tncRead,checks:["a1","a2","a3","a4"].filter(id=>$(id).checked),f:{}};
   DRAFT_FIELDS.forEach(k=>d.f[k]=$(k).value);
   return d;
@@ -1037,6 +1050,7 @@ $("resumeYes").addEventListener("click",()=>{
   S.qty=Math.min(d.qty||S.qty,E.maxQty); [...$("qty").children].forEach(b=>b.classList.toggle("on",+b.dataset.n===S.qty));
   S.choices=(d.choices||S.choices).map(c=>({c:E.cats.some(x=>x[0]===c.c)?c.c:"",s:c.s||""}));
   S.seat=d.seat||""; S.wait=d.wait||""; S.flex=d.flex||""; S.region=d.region||"MY";
+  S.showDate=(E.showDates||[]).indexOf(d.showDate)>=0?d.showDate:""; pickRadio("showDate",S.showDate);
   pickRadio("seat",S.seat); pickRadio("wait",S.wait); pickRadio("flex",S.flex);
   [...$("region").children].forEach(b=>b.classList.toggle("on",b.dataset.r===S.region));
   [["faqRead","faqState","faqChk","a1"],["tncRead","tncState","tncChk","a2"]].forEach(([k,st,lab,chk])=>{
@@ -1091,6 +1105,8 @@ function renderEvent(){
   $("evPoster").hidden=!E.poster; if(E.poster){$("evPoster").src=E.poster;$("evPoster").alt=E.title+" poster";}
   $("qty").innerHTML=Array.from({length:E.maxQty},(_,k)=>`<button type="button" data-n="${k+1}" class="${S.qty===k+1?"on":""}">${k+1} ticket${k?"s":""}</button>`).join("");
   $("qty").style.gridTemplateColumns=`repeat(${E.maxQty},1fr)`;
+  const DS=E.showDates||[]; $("dateCard").hidden=DS.length<2;
+  $("dateOpts").innerHTML=DS.length<2?"":DS.map(d=>`<label class="opt${S.showDate===d?" sel":""}"><input type="radio" name="showDate" value="${esc(d)}"${S.showDate===d?" checked":""}><span>${esc(d)}</span></label>`).join("");
   $("qtyNote").textContent=`Max ${E.maxQty} tickets per order. Need more? Submit this order first, then tap "Order more tickets" to fill in another one.`;
   $("moreTxt").textContent=`Each order is max ${E.maxQty} tickets. Your details are saved, so a new order only asks about tickets and payment.`;
   $("progress").innerHTML=steps().slice(0,-1).map(()=>"<span></span>").join("");
@@ -1157,6 +1173,7 @@ function renderAcct(card,region,pm,code){
     ${a.qrUrl?`<p class="hint" style="margin:0">Screenshot the QR, then scan it from your banking app.</p>`:""}
     <div class="kv"><div><span>Reference</span><b>${esc(ref)}</b><button type="button" class="copy" data-copy="${esc(ref)}">Copy</button></div></div>`;
 }
+$("dateOpts").addEventListener("change",e=>{ if(e.target.name!=="showDate") return; S.showDate=e.target.value; pickRadio("showDate",S.showDate); update(); });
 $("qty").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;S.qty=+b.dataset.n;[...$("qty").children].forEach(x=>x.classList.toggle("on",x===b));update();});
 $("region").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;S.region=b.dataset.r;[...$("region").children].forEach(x=>x.classList.toggle("on",x===b));renderPM();update();});
 [["memUp","memUp"],["payUp","payUp"]].forEach(([id,key])=>{
@@ -1215,7 +1232,7 @@ function texts(){
 }
 function answers(){
   const ch=S.choices.map(c=>c.c?`${c.c}${c.s?" ("+c.s+", not guaranteed)":""}`:"None"), t=texts();
-  return [["§","Event"],["Event",`${E.title} · ${String(E.saleLabel).toLowerCase()}`],["Show",`${E.date}, ${E.time} · ${E.venue}`],
+  return [["§","Event"],["Event",`${E.title} · ${String(E.saleLabel).toLowerCase()}`],["Show",`${S.showDate||E.date}, ${E.time} · ${E.venue}`],
     ...(E.needsCode?[[E.codeLabel,$("mem").value]]:[]),
     ["§","You"],["Name",`${$("fn").value} ${$("ln").value}`],["Telegram",$("tg").value],["Phone",$("ph").value],["Email",$("em").value],
     [E.inMalaysia?"IC":"Passport",$("ic").value],["Refund to",`${$("bank").value} ${$("acc").value} ${$("accn").value}`],...(E.needsAccount?[[`${E.platform} login`,$("pe").value]]:[]),
@@ -1234,7 +1251,7 @@ async function submitBook(){
     const t=texts();
     const payload={eventId:E.id,fn:$("fn").value.trim(),ln:$("ln").value.trim(),ph:$("ph").value.trim(),em:$("em").value.trim(),ic:$("ic").value.trim(),
       bank:$("bank").value,acc:$("acc").value.trim(),accn:$("accn").value.trim(),pe:E.needsAccount?$("pe").value.trim():"",pp:E.needsAccount?$("pp").value:"",
-      mem:E.needsCode?$("mem").value.trim():"",qty:S.qty,choices:S.choices,region:S.region,pm:S.pm,...t,copy:copyText(),
+      mem:E.needsCode?$("mem").value.trim():"",showDate:S.showDate||"",qty:S.qty,choices:S.choices,region:S.region,pm:S.pm,...t,copy:copyText(),
       memFile:E.needsShot?await fileData($("memUp").querySelector("input")):null,payFile:await fileData($("payUp").querySelector("input")),
       memDm:S.memUp==="DM",payDm:S.payUp==="DM",dmAdmin:dmAdmin()};
     const r=await call("submitBooking",INIT,payload);
@@ -1268,6 +1285,7 @@ function blocker(){
       if(E.needsAccount&&!$("pp").value) return `Enter your ${E.platform} password`;
       return "";
     case "tickets":
+      if((E.showDates||[]).length>1&&!S.showDate) return "Pick which date you want";
       if(!S.choices[0].c) return "Pick your 1st choice";
       if(S.qty>1&&!S.seat) return "Tell us if seats must be together";
       if(S.choices[1].c&&!S.wait) return "Tell us how long to wait before your next choice";
@@ -1330,6 +1348,12 @@ function startPre(id){
   enterFlow(); M="pre"; const ev=EVENTS[id];
   P={i:0,ev,qty:Math.min(2,ev.maxQty||2),pTier:"",pDay:"",region:"MY",ppm:"",up:false,res:null};
   ["p1","p2","p3"].forEach(x=>$(x).checked=false); $("pNote").value="";
+  const PC=document.querySelector('[data-name="pCity"]'), TL=ev.tourList||[];
+  $("pCityCard").hidden=!TL.length; P.pCity="";
+  PC.innerHTML=TL.map(t=>`<label class="opt"><input type="radio" name="pCity" value="${esc(t.label)}"><span>${esc(t.label)}</span></label>`).join("");
+  const PD=document.querySelector('[data-name="pDay"]');
+  if(!PD._orig) PD._orig=PD.innerHTML;
+  PD.innerHTML=(ev.showDates||[]).length>1?ev.showDates.map(d=>`<label class="opt"><input type="radio" name="pDay" value="${esc(d)}"><span>${esc(d)}</span></label>`).join("")+`<label class="opt"><input type="radio" name="pDay" value="Any date"><span>Any date is fine</span></label>`:PD._orig;
   document.querySelectorAll('[data-name="pTier"] .opt,[data-name="pDay"] .opt').forEach(o=>{o.classList.remove("sel");o.querySelector("input").checked=false;});
   $("pUp").classList.remove("done"); $("pUp").querySelector("input").value=""; dmSet("pUp",false);
   $("pUp").querySelector(".txt").innerHTML=`Upload your receipt<br><small class="hint">Screenshot or PDF</small>`;
@@ -1364,12 +1388,12 @@ function renderPrePay(){
 function renderPreDone(){
   const r=P.res, note=$("pNote").value.trim();
   $("pDoneTxt").textContent=`Pre-booking ${r.id}`;
-  $("pCopy").innerHTML=`<span class="from">JTS bot</span>📋 COPY OF YOUR PRE-BOOKING ${esc(r.id)}\n\nEvent: ${esc(P.ev.title)} (${esc(P.ev.city)})\nTickets: ${P.qty}\nAiming for: ${esc(P.pTier)}\nShow date: ${esc(P.pDay)}${note?"\nNotes: "+esc(note):""}\n\nDeposit paid: ${money(r.dep,r.cur)} (${esc(P.ppm)})\nDeducted later when booking opens.\nNo refund if you cancel, unless you find a replacement.`;
+  $("pCopy").innerHTML=`<span class="from">JTS bot</span>📋 COPY OF YOUR PRE-BOOKING ${esc(r.id)}\n\nEvent: ${esc(P.ev.title)}${P.pCity?"\nCity: "+esc(P.pCity):" ("+esc(P.ev.city)+")"}\nTickets: ${P.qty}\nAiming for: ${esc(P.pTier)}\nShow date: ${esc(P.pDay)}${note?"\nNotes: "+esc(note):""}\n\nDeposit paid: ${money(r.dep,r.cur)} (${esc(P.ppm)})\nDeducted later when booking opens.\nNo refund if you cancel, unless you find a replacement.`;
 }
 async function submitPre(){
   busy(true,"Sending…");
   try{
-    const payload={eventId:P.ev.id,qty:P.qty,tier:P.pTier,day:P.pDay,note:$("pNote").value.trim(),region:P.region,pm:P.ppm,
+    const payload={eventId:P.ev.id,city:P.pCity||"",qty:P.qty,tier:P.pTier,day:P.pDay,note:$("pNote").value.trim(),region:P.region,pm:P.ppm,
       fn:$("fn").value.trim(),ln:$("ln").value.trim(),ph:$("ph").value.trim(),em:$("em").value.trim(),payFile:await fileData($("pUp").querySelector("input")),payDm:P.up==="DM",dmAdmin:dmAdmin()};
     const r=await call("submitPrebook",INIT,payload);
     P.res=r; ORDERS.unshift({id:r.id,ev:`Pre-book · ${P.ev.title}`,st:["Checking deposit","s-soon"],note:""});
@@ -1379,7 +1403,7 @@ async function submitPre(){
 function preBlocker(){
   switch(PSTEPS[P.i]){
     case "pre-info": return ($("p1").checked&&$("p2").checked&&$("p3").checked)?"":"Tick all three deposit rules";
-    case "pre-form": return !P.pTier?"Tell us what you're aiming for":!P.pDay?"Pick a show date option":"";
+    case "pre-form": return ((P.ev.tourList||[]).length&&!P.pCity)?"Pick which city":!P.pTier?"Tell us what you're aiming for":!P.pDay?"Pick a show date option":"";
     case "pre-pay": return !P.ppm?"Choose how you'll pay":!P.up?"Upload your payment proof":"";
   }
   return "";
@@ -1389,9 +1413,10 @@ function updatePre(){
   $("why").textContent=st==="pre-done"?"":why; $("next").disabled=!!why;
   $("next").textContent={"pre-info":"Pre-book a slot","pre-form":"Continue","pre-pay":"Submit pre-booking","pre-done":"Back to home"}[st];
 }
-document.querySelectorAll('[data-name="pTier"],[data-name="pDay"]').forEach(g=>g.querySelectorAll("input").forEach(inp=>inp.addEventListener("change",()=>{
+document.querySelectorAll('[data-name="pTier"],[data-name="pDay"],[data-name="pCity"]').forEach(g=>g.addEventListener("change",e=>{
+  const inp=e.target; if(!inp||inp.type!=="radio") return;
   P[g.dataset.name]=inp.value; g.querySelectorAll(".opt").forEach(o=>o.classList.toggle("sel",o.querySelector("input").checked)); updatePre();
-})));
+}));
 $("pQty").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;P.qty=+b.dataset.n;[...$("pQty").children].forEach(x=>x.classList.toggle("on",x===b));});
 $("pRegion").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;P.region=b.dataset.r;[...$("pRegion").children].forEach(x=>x.classList.toggle("on",x===b));renderPrePay();updatePre();});
 $("pUp").querySelector("input").addEventListener("change",e=>{const f=e.target.files[0];if(!f)return;P.up=f.name;$("pUp").classList.add("done");$("pUp").querySelector(".txt").innerHTML=`✓ ${esc(f.name.length>28?f.name.slice(0,25)+"…":f.name)}<br><small>Tap to replace</small>`;updatePre();});
