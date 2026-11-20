@@ -399,6 +399,7 @@ body.tg .back{display:none!important}
         <li><b>Details get announced</b><span>We message you the real booking form with prices and service charge.</span></li>
         <li><b>Deposit is deducted later</b><span>RM30 / S$10 per ticket comes off what you pay when booking opens.</span></li>
       </ol>
+      <div class="note" id="preEstSc" hidden></div>
       <div class="note">Pre-booking slots are limited. Once they're gone, this closes.</div>
     </div>
     <div class="card">
@@ -1334,7 +1335,8 @@ function startPre(id){
   $("pUp").querySelector(".txt").innerHTML=`Upload your receipt<br><small class="hint">Screenshot or PDF</small>`;
   $("prePoster").hidden=!ev.poster; if(ev.poster){$("prePoster").src=ev.poster;$("prePoster").alt=ev.title+" poster";}
   $("preHero").style.setProperty("--tix",ev.tint);
-  $("preHero").innerHTML=`<div class="main"><span class="tag">${esc(ev.saleLabel||"PRE-BOOKING")}</span><h1>${esc(ev.title)}</h1><p>${esc(ev.sub)}</p><div class="facts"><div>Expected<b>${esc(ev.date)}</b>${esc(ev.city)}</div><div>Deposit<b>RM${ev.dep.MY} · S$${ev.dep.SG}</b>per ticket</div></div></div><div class="side"><span>PRE ♡ ${esc(ev.id)}</span></div>`;
+  $("preEstSc").hidden=!ev.estSc; $("preEstSc").innerHTML=ev.estSc?`<b>Estimated service charge: ${esc(ev.estSc)}</b><br>This is only an estimate, since the service charge isn't decided yet. We'll confirm the final amount when booking opens.`:"";
+  $("preHero").innerHTML=`<div class="main"><span class="tag">${esc(ev.saleLabel||"PRE-BOOKING")}</span><h1>${esc(ev.title)}</h1><p>${esc(ev.sub)}</p><div class="facts"><div>Expected<b>${esc(ev.date)}</b>${esc(ev.city)}</div><div>Deposit<b>RM${ev.dep.MY} · S$${ev.dep.SG}</b>per ticket</div>${ev.estSc?`<div>Est. service charge<b>${esc(ev.estSc)}</b>estimate only</div>`:""}</div></div><div class="side"><span>PRE ♡ ${esc(ev.id)}</span></div>`;
   $("pPrefill").textContent=$("fn").value?`✓ Using your saved details: ${$("fn").value} ${$("ln").value} · ${$("ph").value}`:"We'll use your Telegram account. Add your full details when booking opens.";
   [...$("pQty").children].forEach(b=>b.classList.toggle("on",+b.dataset.n===P.qty));
   [...$("pRegion").children].forEach(b=>b.classList.toggle("on",b.dataset.r==="MY"));
